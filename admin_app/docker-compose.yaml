@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  shelf_admin:
+    container_name: shelf_admin
+    build:
+      context: .
+    ports:
+      - "5541:5541"
+    env_file:
+      - .env
+    command: ["./bash_cmd/admin_app.sh"]
+    network_mode: host
