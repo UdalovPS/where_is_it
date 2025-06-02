@@ -40,3 +40,4 @@ baggage.json
 test_env
 error.log
 ngrok
+core_app/logics/sbert_cache/
