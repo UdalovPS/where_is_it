@@ -13,7 +13,12 @@ config = context.config
 from storage.database.db.postgres_alchemy.alchemy_core import Base
 
 # import all models
-from storage.database.db.postgres_alchemy.customer import CustomersTable
+from storage.database.db.postgres_alchemy.users import UsersTable
+from storage.database.db.postgres_alchemy.organizations import OrganizationsTable
+from storage.database.db.postgres_alchemy.countries import CountriesTable
+from storage.database.db.postgres_alchemy.districts import DistrictsTable
+from storage.database.db.postgres_alchemy.cities import CitiesTable
+from storage.database.db.postgres_alchemy.branches import BranchesTable
 from storage.database.db.postgres_alchemy.auth import AuthTokenTable
 
 from config import DB_HOST, DB_NAME, DB_PORT, DB_PASS, DB_USER
