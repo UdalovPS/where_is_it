@@ -52,3 +52,15 @@ def choice_branch_schemas_obj(db_type: str) -> database.BaseBranchSchemas:
         "postgres_alchemy": postgres_alchemy.BranchSchemasDAL
     }
     return choice_db_dict[db_type]()
+
+def choice_items_obj(db_type: str) -> database.BaseItems:
+    """Данный метод возвращает объект для взаимодействия с
+    данными товаров разложенных на полках
+    Args:
+        db_type: тип базы данных
+    """
+    choice_db_dict = {
+        "db_test": db_test.ClientTest,
+        "postgres_alchemy": postgres_alchemy.ItemsDAL
+    }
+    return choice_db_dict[db_type]()

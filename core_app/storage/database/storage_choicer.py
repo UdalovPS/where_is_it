@@ -46,3 +46,9 @@ def choice_branch_schemas_obj(storage_type: str) -> database.BaseBranchSchemas:
         "just_db": just_db.BranchSchemasJustDb
     }
     return data_dict[storage_type]()
+
+def choice_items_obj(storage_type: str) -> database.BaseItems:
+    data_dict = {
+        "just_db": just_db.ItemsJustDb
+    }
+    return data_dict[storage_type]()

@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from database.organizations.model import OrganizationsTable
     from database.shelves.model import ShelvesTable
     from database.users.model import UsersTable
+    from database.items.model import ItemsTable
 
 
 class SpotsTable(Base):
@@ -32,5 +33,6 @@ class SpotsTable(Base):
 
     organization = relationship("OrganizationsTable")
     shelf = relationship("ShelvesTable")
+    item = relationship("ItemsTable")
     creator = relationship("UsersTable", foreign_keys=[creator_id])
     updator = relationship("UsersTable", foreign_keys=[updator_id])

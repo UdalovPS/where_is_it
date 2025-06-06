@@ -26,7 +26,7 @@ router = APIRouter(prefix="/spots", tags=['Spots'])
 async def get_product_name(
         frontend_id: int,
         frontend_service_id: int,
-        product_name: str,
+        search_name: str,
         token: Union[str, None] = Depends(get_token),
         logic_obj: SpotLogic = Depends(SpotLogic)
 ):
@@ -34,19 +34,18 @@ async def get_product_name(
     Args:
         frontend_id: идентификатор клиента из frontend сервиса который обращается к API
         frontend_service_id: тип frontend сервиса который взаимодействует с системой
-        product_name: имя по которому нужно найти товар
+        search_name: имя по которому нужно найти товар
         token: токен авторизации которые передается в заголовке запроса
         logic_obj: логический объект в котором происходит обработки бизнес логики
     """
-    logger.info(f"Пришел запрос на определение данных товаров по имени: {product_name}. frontend_id: {frontend_id}, frontend_service_id: {frontend_service_id}")
+    logger.info(f"Пришел запрос на определение данных товаров по имени: {search_name}. frontend_id: {frontend_id}, frontend_service_id: {frontend_service_id}")
     res = await logic_obj.use_get_product_data_by_name(
         token=token,
         api="spot/products",
-        value=product_name,
+        search_name=search_name,
         frontend_id=frontend_id,
         frontend_service_id=frontend_service_id
     )
-
     # проверяем не произошла ли ошибка
     if res.error:
         return JSONResponse(status_code=res.error.status_code, content=res.model_dump())

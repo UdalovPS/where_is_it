@@ -13,6 +13,7 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - /var/lib/postgresql/wit_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
   wit_redis:
     image: redis:7

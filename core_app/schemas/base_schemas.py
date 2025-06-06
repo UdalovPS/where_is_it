@@ -27,6 +27,7 @@ class BaseResultSchem(BaseModel, Generic[T]):
         error: ошибка в ответе, если она есть
         data: данные которые возвращает метод
     """
+    success: bool = True
     error: Optional[BaseErrorSchem] = None
     data: Optional[T] = None
 

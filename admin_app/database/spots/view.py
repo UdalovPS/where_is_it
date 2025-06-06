@@ -8,13 +8,13 @@ from .model import SpotsTable
 class SpotsView(ModelView):
     fields = [
         SpotsTable.id,
-        SpotsTable.item_id,
+        SpotsTable.item,
+        SpotsTable.organization,
+        SpotsTable.shelf,
         SpotsTable.cell_number,
         SpotsTable.floor_number,
         SpotsTable.created_at,
         SpotsTable.update_at,
-        SpotsTable.organization,
-        SpotsTable.shelf,
         SpotsTable.creator,
         SpotsTable.updator,
     ]

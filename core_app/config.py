@@ -8,6 +8,10 @@ load_dotenv()
 STORAGE_TYPE = "just_db"
 DB_TYPE = "postgres_alchemy"
 
+# проверка и добавление в postgres функционала поиска похожих товаров
+# SELECT * FROM pg_extension WHERE extname = 'pg_trgm';
+# CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 # глобальные переменные для работы с postgres БД
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
