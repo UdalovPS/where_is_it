@@ -1,5 +1,5 @@
 """storage/database/just_db/clients"""
-from typing import Union
+from typing import Optional
 
 from schemas import storage_schem
 from storage.base_interfaces import database
@@ -14,44 +14,11 @@ class ClientsJustDb(database.BaseClient):
     """
     db = db_choicer.choice_db_client_obj(db_type=config.DB_TYPE)
 
-    async def add_new_client(
+    async def get_data_by_frontend_id(
             self,
-            messenger_id: int,
-            messenger_type: int,
-            name: Union[str, None],
-            phone: Union[str, None],
-            username: Union[str, None],
-            age: Union[int, None]
-    ) -> storage_schem.ClientSchem:
-        """Данный метод добавляет нового клиента в БД
-         Args:
-             messenger_id: идентификатор из мессенджера/приложения
-             messenger_type: тип мессенджера/приложения
-             name: имя клиента (не обязательный параметр)
-             phone: номер телефона клиента (не обязательный параметр)
-             username: username клиента (не обязательный параметр)
-             age: возраст клиента (не обязательный параметр)
-        """
-        return await self.db.add_new_client(
-            messenger_id=messenger_id,
-            messenger_type=messenger_type,
-            name=name,
-            phone=phone,
-            username=username,
-            age=age
-        )
-
-    async def get_client_data_by_messenger_id(
-            self,
-            messenger_id: int,
-            messenger_type: int
-    ) -> Union[storage_schem.ClientSchem, None]:
-        """Метод извлекающий данные клиента из БД
-        Args:
-            messenger_id: идентификатор из мессенджера/приложения
-            messenger_type: тип мессенджера/приложения
-        """
-        return await self.db.get_client_data_by_messenger_id(
-            messenger_id=messenger_id,
-            messenger_type=messenger_type
+            frontend_id: int,
+            frontend_service_id: int
+    ) -> Optional[storage_schem.clients_schem.ClientWithLocationSchem]:
+        return await self.db.get_data_by_frontend_id(
+            frontend_id=frontend_id, frontend_service_id=frontend_service_id
         )

@@ -1,41 +1,21 @@
 from abc import ABC, abstractmethod
-from typing import Any, Union
+from typing import Optional
 
 from schemas import storage_schem
 
 
 class BaseClient(ABC):
     """Интерфейс класс хранящий данные о клиенте"""
-    @abstractmethod
-    async def add_new_client(
-            self,
-            messenger_id: int,
-            messenger_type: int,
-            name: Union[str, None],
-            phone: Union[str, None],
-            username: Union[str, None],
-            age: Union[int, None]
-    ) -> storage_schem.ClientSchem:
-        """Абстрактный интерфейс метод добавления нового клиента в БД
-         Args:
-             messenger_id: идентификатор из мессенджера/приложения
-             messenger_type: тип мессенджера/приложения
-             name: имя клиента (не обязательный параметр)
-             phone: номер телефона клиента (не обязательный параметр)
-             username: username клиента (не обязательный параметр)
-             age: возраст клиента (не обязательный параметр)
-        """
-        pass
 
     @abstractmethod
-    async def get_client_data_by_messenger_id(
+    async def get_data_by_frontend_id(
             self,
-            messenger_id: int,
-            messenger_type: int
-    ) -> Union[storage_schem.ClientSchem, None]:
-        """Абстрактный интерфейс метод извлекающий данные клиента из БД
+            frontend_id: int,
+            frontend_service_id: int
+    ) -> Optional[storage_schem.clients_schem.ClientWithLocationSchem]:
+        """Извлечение данных клиента по типу мессенджера и ID из данного мессенджера
         Args:
-            messenger_id: идентификатор из мессенджера/приложения
-            messenger_type: тип мессенджера/приложения
+            frontend_id: идентификатор клиента во внешнем фронтенд сервисе
+            frontend_service_id: идентификатор фронтенд сервиса
         """
         pass

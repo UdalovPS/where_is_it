@@ -19,4 +19,4 @@ class OrganizationView(ModelView):
 
     exclude_fields_from_create = [OrganizationsTable.created_at, OrganizationsTable.update_at]
     exclude_fields_from_edit = [OrganizationsTable.created_at, OrganizationsTable.update_at]
-
+    icon = "fa fa-sitemap"

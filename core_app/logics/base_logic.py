@@ -11,13 +11,15 @@ logger = logging.getLogger(__name__)
 
 class BaseLogic(StorageCommon):
     """Родительский класс для всех объектов выполняющих бизнес логику.
-    В данном классе инкапсулированы все общение методы + логика
+    В данном классе инкапсулированы все общие методы + логика
     взаимодействия с БД и КЭШем
     Attr:
-        AUTH_CUSTOMER - переменная определяющая к какому заказчику относится запрос
+        ORGANIZATION_ID: переменная определяющая к какой организации относится запрос
+        BRANCH_ID: переменная определяющая к какому филиалу относится запрос
     """
     def __init__(self):
-        self.CUSTOMER_ID: Optional[int] = None
+        self.ORGANIZATION_ID: Optional[int] = None
+        self.BRANCH_ID: Optional[int] = None
 
     async def check_authenticate(self, token: Optional[str], api: str):
         """Проверяем аутентификацию по токену доступа
@@ -31,8 +33,9 @@ class BaseLogic(StorageCommon):
             raise AuthenticationError(token=token, api=api)
         else:
             # выставляем переменную которая показывает к какому заказчику относится запрос
-            logger.info(f"Запрос по API: <{api}> относится к заказчику: {data.customer_id}")
-            self.CUSTOMER_ID = data.customer_id
+            logger.info(f"Запрос по API: <{api}> относится к заказчику: {data.organization_id}")
+            self.ORGANIZATION_ID = data.organization_id
+            self.BRANCH_ID = data.branch_id
 
 
 

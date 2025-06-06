@@ -4,7 +4,7 @@ from . import db_test
 from . import postgres_alchemy
 
 
-def choice_db_customer_obj(db_type: str) -> database.BaseCustomer:
+def choice_db_customer_obj(db_type: str) -> database.BaseOrganizations:
     """Данный метод возвращает объект для взаимодействия с
     данными заказчика по конфигурационным данным типа БД
     Args:
@@ -23,7 +23,7 @@ def choice_db_client_obj(db_type: str) -> database.BaseClient:
     """
     choice_db_dict = {
         "db_test": db_test.ClientTest,
-        "postgres_alchemy": db_test.ClientTest  # !!! исправить
+        "postgres_alchemy": postgres_alchemy.ClientsDAL
     }
     return choice_db_dict[db_type]()
 
@@ -37,5 +37,18 @@ def choice_db_auth_obj(db_type: str) -> database.BaseAuth:
     choice_db_dict = {
         "db_test": db_test.ClientTest,
         "postgres_alchemy": postgres_alchemy.AuthTokenDAL
+    }
+    return choice_db_dict[db_type]()
+
+
+def choice_branch_schemas_obj(db_type: str) -> database.BaseBranchSchemas:
+    """Данный метод возвращает объект для взаимодействия с
+    данными схем филиалов (работа с файлами)
+    Args:
+        db_type: тип базы данных
+    """
+    choice_db_dict = {
+        "db_test": db_test.ClientTest,
+        "postgres_alchemy": postgres_alchemy.BranchSchemasDAL
     }
     return choice_db_dict[db_type]()

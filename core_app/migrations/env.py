@@ -20,6 +20,14 @@ from storage.database.db.postgres_alchemy.districts import DistrictsTable
 from storage.database.db.postgres_alchemy.cities import CitiesTable
 from storage.database.db.postgres_alchemy.branches import BranchesTable
 from storage.database.db.postgres_alchemy.auth import AuthTokenTable
+from storage.database.db.postgres_alchemy.branch_schemas import BranchSchemasTable
+from storage.database.db.postgres_alchemy.shelves import ShelvesTable
+from storage.database.db.postgres_alchemy.categories import CategoriesTable
+from storage.database.db.postgres_alchemy.items import ItemsTable
+from storage.database.db.postgres_alchemy.spots import SpotsTable
+from storage.database.db.postgres_alchemy.frontend_service import FrontendServicesTable
+from storage.database.db.postgres_alchemy.clients import ClientsTable
+from storage.database.db.postgres_alchemy.client_location import ClientLocationTable
 
 from config import DB_HOST, DB_NAME, DB_PORT, DB_PASS, DB_USER
 

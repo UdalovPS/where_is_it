@@ -8,7 +8,7 @@ from ..db import db_choicer
 import config
 
 
-class CustomerJustDb(database.BaseCustomer):
+class CustomerJustDb(database.BaseOrganizations):
     """Данный объект отвечает за взаимодействие с БД
     касающимися для получения данных заказчика
     """

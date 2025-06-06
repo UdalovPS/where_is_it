@@ -12,9 +12,12 @@ class BranchesView(ModelView):
         BranchesTable.address,
         BranchesTable.city,
         BranchesTable.organization,
+        BranchesTable.latitude,
+        BranchesTable.longitude,
         BranchesTable.creator,
         BranchesTable.updator,
     ]
 
     exclude_fields_from_create = [BranchesTable.created_at, BranchesTable.update_at]
     exclude_fields_from_edit = [BranchesTable.created_at, BranchesTable.update_at]
+    icon = "fa fa-home"

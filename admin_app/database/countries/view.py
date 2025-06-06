@@ -18,3 +18,4 @@ class CountriesView(ModelView):
 
     exclude_fields_from_create = [CountriesTable.created_at, CountriesTable.update_at]
     exclude_fields_from_edit = [CountriesTable.created_at, CountriesTable.update_at]
+    icon = "fa fa-globe"

@@ -14,6 +14,7 @@ from logics.spots_logic import SpotLogic
 
 # импортируем глобальные переменные
 from fastapi_core import get_token
+from storage.core import StorageCommon
 
 
 logger = logging.getLogger(__name__)
@@ -23,25 +24,44 @@ router = APIRouter(prefix="/spots", tags=['Spots'])
 
 @router.get("/products")
 async def get_product_name(
-        client_id: Union[int, str],
-        frontend_name: str,
+        frontend_id: int,
+        frontend_service_id: int,
         product_name: str,
-        token: Union[str, None] = Depends(get_token)
+        token: Union[str, None] = Depends(get_token),
+        logic_obj: SpotLogic = Depends(SpotLogic)
 ):
     """Роут для обработки запроса на поиск продукта по его имени в векторном хранилище
     Args:
-        client_id: идентификатор клиента в системе мессенджера
-        frontend_name: наименование фронтенда из которого приходит ответ (telegram или т.п.)
+        frontend_id: идентификатор клиента из frontend сервиса который обращается к API
+        frontend_service_id: тип frontend сервиса который взаимодействует с системой
         product_name: имя по которому нужно найти товар
         token: токен авторизации которые передается в заголовке запроса
-        client_id: идентификатор клиента в
+        logic_obj: логический объект в котором происходит обработки бизнес логики
     """
-    logger.info(f"Пришел запрос на определение данных товаров по имени")
-    logic_obj = SpotLogic()
-    res = await logic_obj.use_get_product_data_by_name_logic(token=token, api="spot/product", value=product_name)
+    logger.info(f"Пришел запрос на определение данных товаров по имени: {product_name}. frontend_id: {frontend_id}, frontend_service_id: {frontend_service_id}")
+    res = await logic_obj.use_get_product_data_by_name(
+        token=token,
+        api="spot/products",
+        value=product_name,
+        frontend_id=frontend_id,
+        frontend_service_id=frontend_service_id
+    )
 
     # проверяем не произошла ли ошибка
     if res.error:
         return JSONResponse(status_code=res.error.status_code, content=res.model_dump())
     else:
         return JSONResponse(status_code=200, content=res.model_dump())
+
+
+@router.get("/")
+async def get_data(
+        node_id: int
+):
+    storage = StorageCommon()
+
+    data = await storage.branch_schemas_obj.get_by_id(node_id=node_id)
+
+    print(data)
+
+    return {"success": True}

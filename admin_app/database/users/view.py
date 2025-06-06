@@ -19,3 +19,5 @@ class UsersView(ModelView):
     ]
     exclude_fields_from_create = [UsersTable.created_at]
     exclude_fields_from_edit = [UsersTable.created_at]
+
+    icon = "fa fa-users"

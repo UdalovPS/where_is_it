@@ -27,47 +27,11 @@ class ClientTest(database.BaseClient):
         },
     }
 
-    async def add_new_client(
-            self,
-            messenger_id: int,
-            messenger_type: int,
-            name: Union[str, None] = None,
-            phone: Union[str, None] = None,
-            username: Union[str, None] = None,
-            age: Union[int, None] = None
-    ) -> storage_schem.ClientSchem:
-        """Данный метод добавляет нового клиента в БД
-         Args:
-             messenger_id: идентификатор из мессенджера/приложения
-             messenger_type: тип мессенджера/приложения
-             name: имя клиента (не обязательный параметр)
-             phone: номер телефона клиента (не обязательный параметр)
-             username: username клиента (не обязательный параметр)
-             age: возраст клиента (не обязательный параметр)
-        """
-        self.clients_data[3] = {
-            "messenger_id": 1,
-            "messenger_type": 1,
-            "name": "test_client_3",
-            "phone": "test_client_3_phone",
-            "username": "test_client_3_username",
-            "age": 33
-        }
-        return storage_schem.ClientSchem(
-            id=3,
-            messenger_id=self.clients_data[3]["messenger_id"],
-            messenger_type=self.clients_data[3]["messenger_type"],
-            name=self.clients_data[3]["name"],
-            phone=self.clients_data[3]["phone"],
-            username=self.clients_data[3]["username"],
-            age=self.clients_data[3]["age"]
-        )
-
     async def get_client_data_by_messenger_id(
             self,
             messenger_id: int,
             messenger_type: int
-    ) -> Union[storage_schem.ClientSchem, None]:
+    ) -> Union[storage_schem.clients_schem.ClientWithLocationSchem, None]:
         """Метод извлекающий данные клиента из БД
         Args:
             messenger_id: идентификатор из мессенджера/приложения

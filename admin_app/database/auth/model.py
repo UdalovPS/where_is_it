@@ -28,5 +28,5 @@ class AuthTokenTable(Base):
         server_default=text("TIMEZONE('utc', now())"),
         onupdate=datetime.utcnow()
     )
-    customer = relationship("OrganizationsTable")
+    organization = relationship("OrganizationsTable")
     branch = relationship("BranchesTable")

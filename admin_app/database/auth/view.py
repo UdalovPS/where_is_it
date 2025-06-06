@@ -13,8 +13,9 @@ class AuthTokeView(ModelView):
         AuthTokenTable.details,
         AuthTokenTable.created_at,
         AuthTokenTable.update_at,
-        AuthTokenTable.customer,
+        AuthTokenTable.organization,
         AuthTokenTable.branch,
     ]
     exclude_fields_from_create = [AuthTokenTable.created_at, AuthTokenTable.update_at, AuthTokenTable.token]
     exclude_fields_from_edit = [AuthTokenTable.created_at, AuthTokenTable.update_at]
+    icon = "fa fa-key"
