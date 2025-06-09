@@ -14,9 +14,16 @@ class BranchSchemasJustDb(database.BaseBranchSchemas):
     """
     db = db_choicer.choice_branch_schemas_obj(db_type=config.DB_TYPE)
 
-    async def get_by_id(self, node_id: int) -> Optional[storage_schem.branches_schem.BranchSchema]:
+    async def get_by_id(self, node_id: int) -> Optional[storage_schem.branches_schem.BranchPlanSchemaBase]:
         """Извлечение данных по первичному ключу
         Args:
             node_id: идентификатор записи
         """
         return await self.db.get_by_id(node_id=node_id)
+
+    async def get_data_by_branch_id(self, branch_id: int) -> Optional[storage_schem.branches_schem.BranchPlanSchemaBase]:
+        """Извлечение данных по ID филиала
+        Args:
+            branch_id: идентификатор филиала
+        """
+        return await self.db.get_data_by_branch_id(branch_id=branch_id)

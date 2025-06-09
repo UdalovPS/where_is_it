@@ -9,3 +9,4 @@ from .district_interface import BaseDistrict
 from .branches_interface import BaseBranches
 from .branch_schemas_interface import BaseBranchSchemas
 from .items_interface import BaseItems
+from .spot_interface import BaseSpot

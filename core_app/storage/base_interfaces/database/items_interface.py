@@ -13,7 +13,7 @@ class BaseItems(ABC):
             search_name: str,
             sim_threshold: float = 0.1,
             count: int = 10
-    ) -> Optional[List[storage_schem.items.SimilarItemsSchem]]:
+    ) -> Optional[List[storage_schem.items_schem.SimilarItemsSchem]]:
         """Извлечение всех похожих по имени товаров лежащих
         на полках в помещении нужного филиала
         Args:

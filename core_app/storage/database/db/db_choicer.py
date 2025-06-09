@@ -64,3 +64,15 @@ def choice_items_obj(db_type: str) -> database.BaseItems:
         "postgres_alchemy": postgres_alchemy.ItemsDAL
     }
     return choice_db_dict[db_type]()
+
+def choice_spots_obj(db_type: str) -> database.BaseSpot:
+    """Данный метод возвращает объект для взаимодействия с
+    данными ячеек на которых разложены товары
+    Args:
+        db_type: тип базы данных
+    """
+    choice_db_dict = {
+        "db_test": db_test.ClientTest,
+        "postgres_alchemy": postgres_alchemy.SpotsDAL
+    }
+    return choice_db_dict[db_type]()

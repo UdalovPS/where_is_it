@@ -1,11 +1,95 @@
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 import os
+import math
 
 from PIL import Image, ImageDraw, ImageFont
 
+from schemas import storage_schem, logic_schem
+
 logger = logging.getLogger(__name__)
 
+
+class Branch:
+    """Объект помещения филиала, по которому будут рассчитываться
+    координаты точек и оптимальные маршруты покупок
+    """
+
+    def __init__(self, exit_x: int, exit_y: int):
+        # координаты входа на изображении
+        self.exit_x = exit_x
+        self.exit_y = exit_y
+
+    def get_centroid(self, spots_list: List[storage_schem.spots_schem.SpotsWithShelvesSchem]) -> Tuple[int, int]:
+        """Находим центроид между всеми точками.
+        Данное действие необходимо чтобы отсечь удаленные точки
+        в случае если один и тот же товар расположен на
+        разных полках.
+        Args:
+            spots_list: список ячеек с координатами которые нужно посетить
+        """
+        logger.info(f"Вычисляю центроид для точек: {spots_list}")
+        sum_x = sum([spot.x_spot_coord for spot in spots_list] + [self.exit_x])
+        sum_y = sum([spot.y_spot_coord for spot in spots_list] + [self.exit_y])
+        avg_x = sum_x // (len(spots_list) + 1)
+        avg_y = sum_y // (len(spots_list) + 1)
+        return avg_x, avg_y
+
+    @staticmethod
+    def distance_between_points(x1: int, y1: int, x2: int, y2: int) -> float:
+        """Вычисляем расстояние между двумя точками"""
+        logger.info(f"Замеряю дистанцию между точками: {x1}, {y1}, {x2}, {y2}")
+        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+    def nearest_neighbor(
+            self,
+            points: List[storage_schem.spots_schem.SpotsWithShelvesSchem]
+    ) -> List[storage_schem.spots_schem.SpotsWithShelvesSchem]:
+        """Строим маршрут для прохождения точек по ближайшим точкам
+        Args:
+            points: точки которые нужно посетить
+        """
+        unvisited = points.copy()
+        path = list()
+        current_x, current_y = self.exit_x, self.exit_y
+
+        while unvisited:
+            nearest = min(unvisited, key=lambda p: self.distance_between_points(current_x, current_y, p.x_spot_coord, p.y_spot_coord))
+            path.append(nearest)
+            current_x, current_y = nearest.x_spot_coord, nearest.y_spot_coord
+            unvisited.remove(nearest)
+        return path
+
+    def two_opt(
+            self,
+            path: List[storage_schem.spots_schem.SpotsWithShelvesSchem]
+    ) -> List[storage_schem.spots_schem.SpotsWithShelvesSchem]:
+        improved = True
+        while improved:
+            improved = False
+            for i in range(1, len(path) - 2):
+                for j in range(i + 1, len(path) - 1):
+                    # Получаем координаты точек
+                    a_x, a_y = path[i - 1].x_spot_coord, path[i - 1].y_spot_coord
+                    b_x, b_y = path[i].x_spot_coord, path[i].y_spot_coord
+                    c_x, c_y = path[j].x_spot_coord, path[j].y_spot_coord
+                    d_x, d_y = path[j + 1].x_spot_coord, path[j + 1].y_spot_coord
+
+                    # Проверяем, что все координаты заданы
+                    if None in [a_x, a_y, b_x, b_y, c_x, c_y, d_x, d_y]:
+                        continue  # Пропускаем точки без координат
+
+                    # Вычисляем расстояния
+                    current_dist = (self.distance_between_points(a_x, a_y, b_x, b_y) +
+                                    self.distance_between_points(c_x, c_y, d_x, d_y))
+                    new_dist = (self.distance_between_points(a_x, a_y, c_x, c_y) +
+                                self.distance_between_points(b_x, b_y, d_x, d_y))
+
+                    if new_dist < current_dist:
+                        # Разворачиваем отрезок между i и j
+                        path[i:j + 1] = path[j:i - 1:-1]
+                        improved = True
+        return path
 
 class Shelf:
     """Объект полки, который расположен в помещеннии и на котором располагаются
@@ -50,8 +134,8 @@ class Shelf:
             else:
                 diff_y = self.y2 - self.y1
             # вычисляем от отступ который нужно добавить по ОСЯМ чтобы вычислить координаты
-            ident_x = diff_x // self.cell_count * (cell_index - 1)
-            ident_y = diff_y // self.cell_count * (cell_index - 1)
+            ident_x = diff_x // (self.cell_count - 1) * (cell_index - 1)
+            ident_y = diff_y // (self.cell_count - 1) * (cell_index - 1)
             # добавляем отступ к начальной координате каждой из осей, чтобы вычислить координаты ячейки
             # по ОСИ X
             if self.x1 > self.x2:

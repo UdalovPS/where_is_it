@@ -1,10 +1,34 @@
 from typing import Generic, Optional, TypeVar
+import datetime
 
 from pydantic import BaseModel
 
 
 # Создаем типовой параметр для Pydantic модели
 T = TypeVar("T", bound=BaseModel)
+
+
+def convert_datetimes(obj):
+    """
+    Рекурсивно преобразует объекты datetime в ISO-строки.
+    Если встречается вложенная модель (наследник BaseModel), пытаемся вызвать ее метод model_dump.
+    """
+    from pydantic import BaseModel
+
+    if isinstance(obj, BaseModel):
+        # Если у вложенной модели есть переопределенный model_dump, используем его
+        if hasattr(obj, "model_dump"):
+            return convert_datetimes(obj.model_dump())
+        else:
+            return convert_datetimes(obj.dict())
+    elif isinstance(obj, dict):
+        return {k: convert_datetimes(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_datetimes(item) for item in obj]
+    elif isinstance(obj, datetime.datetime):
+        return obj.isoformat()
+    else:
+        return obj
 
 
 class BaseErrorSchem(BaseModel):
@@ -30,6 +54,12 @@ class BaseResultSchem(BaseModel, Generic[T]):
     success: bool = True
     error: Optional[BaseErrorSchem] = None
     data: Optional[T] = None
+
+    def model_dump(self, *args, **kwargs) -> dict:
+        # Получаем «сырые» данные модели
+        raw_data = super().model_dump(*args, **kwargs)
+        # Преобразуем datetime в ISO-строки
+        return convert_datetimes(raw_data)
 
 
 class NullSchem(BaseModel):

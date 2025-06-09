@@ -44,7 +44,7 @@ class ItemsDAL(database.BaseItems):
             search_name: str,
             sim_threshold: float = 0.1,
             count: int = 10
-    ) -> Optional[List[storage_schem.items.SimilarItemsSchem]]:
+    ) -> Optional[List[storage_schem.items_schem.SimilarItemsSchem]]:
         """Извлечение всех похожих по имени товаров лежащих
         на полках в помещении нужного филиала
         Args:
@@ -60,7 +60,8 @@ class ItemsDAL(database.BaseItems):
                         SELECT DISTINCT
                             i.id,
                             i.name,
-                            similarity(i.name, :search_name) AS similarity_score
+                            similarity(i.name, :search_name) AS similarity_score,
+                            c.name AS category
                         FROM 
                             items_table i
                         JOIN 
@@ -69,6 +70,8 @@ class ItemsDAL(database.BaseItems):
                             shelves_table s ON sp.shelf_id = s.id
                         JOIN
                             branches_table b ON s.branch_id = b.id
+                        JOIN 
+                            categories_table c ON c.id = i.category_id
                         WHERE 
                             b.id = :branch_id
                             AND similarity(i.name, :search_name) > :similarity_threshold
@@ -85,8 +88,7 @@ class ItemsDAL(database.BaseItems):
 
                     if not rows:
                         return None
-                    # return [dict(row._mapping) for row in rows]
-                    return [storage_schem.items.SimilarItemsSchem.model_validate(row) for row in rows]
+                    return [storage_schem.items_schem.SimilarItemsSchem.model_validate(row) for row in rows]
 
         except Exception as ex:
             logger.critical(

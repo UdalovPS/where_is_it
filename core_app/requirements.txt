@@ -10,6 +10,7 @@ dnspython==2.7.0
 email_validator==2.2.0
 fastapi==0.115.12
 fastapi-cli==0.0.7
+fasteners==0.19
 git-filter-repo==2.47.0
 greenlet==3.2.2
 h11==0.16.0
@@ -24,6 +25,7 @@ markdown-it-py==3.0.0
 MarkupSafe==3.0.2
 mdurl==0.1.2
 orjson==3.10.18
+pillow==11.2.1
 pydantic==2.11.5
 pydantic-extra-types==2.10.5
 pydantic-settings==2.9.1

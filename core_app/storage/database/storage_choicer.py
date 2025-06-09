@@ -52,3 +52,9 @@ def choice_items_obj(storage_type: str) -> database.BaseItems:
         "just_db": just_db.ItemsJustDb
     }
     return data_dict[storage_type]()
+
+def choice_spots_obj(storage_type: str) -> database.BaseSpot:
+    data_dict = {
+        "just_db": just_db.SpotsJustDb
+    }
+    return data_dict[storage_type]()

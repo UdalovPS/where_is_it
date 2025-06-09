@@ -3,7 +3,7 @@
 """
 
 import logging
-from typing import Union
+from typing import Union, Optional
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -14,7 +14,7 @@ from logics.spots_logic import SpotLogic
 
 # импортируем глобальные переменные
 from fastapi_core import get_token
-from storage.core import StorageCommon
+from schemas import logic_schem
 
 
 logger = logging.getLogger(__name__)
@@ -53,14 +53,30 @@ async def get_product_name(
         return JSONResponse(status_code=200, content=res.model_dump())
 
 
-@router.get("/")
-async def get_data(
-        node_id: int
+@router.post("/")
+async def get_spots(
+        frontend_id: int,
+        frontend_service_id: int,
+        items_ids: logic_schem.spot_schem.ItemsIDsSchem,
+        route: bool = False,
+        token: Union[str, None] = Depends(get_token),
+        logic_obj: SpotLogic = Depends(SpotLogic),
+        branch_id: Optional[int] = None
 ):
-    storage = StorageCommon()
-
-    data = await storage.branch_schemas_obj.get_by_id(node_id=node_id)
-
-    print(data)
-
-    return {"success": True}
+    logger.info(f"Пришел запрос схему расположения ячеек в магазине. frontend_id: {frontend_id}, "
+                f"frontend_service_id: {frontend_service_id}, items_ids: {items_ids}, "
+                f"branch_id: {branch_id}")
+    res = await logic_obj.get_spots_schem(
+        token=token,
+        api="spot/schemas",
+        items_ids=items_ids.ids,
+        frontend_id=frontend_id,
+        frontend_service_id=frontend_service_id,
+        branch_id=branch_id,
+        route=route
+    )
+    # проверяем не произошла ли ошибка
+    if res.error:
+        return JSONResponse(status_code=res.error.status_code, content=res.model_dump())
+    else:
+        return JSONResponse(status_code=200, content=res.model_dump())

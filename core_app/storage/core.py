@@ -14,13 +14,14 @@ class StorageCommon:
     auth_obj = storage_choicer.choice_auth_obj(storage_type=config.STORAGE_TYPE)
     branch_schemas_obj = storage_choicer.choice_branch_schemas_obj(storage_type=config.STORAGE_TYPE)
     items_obj = storage_choicer.choice_items_obj(storage_type=config.STORAGE_TYPE)
+    spots_obj = storage_choicer.choice_spots_obj(storage_type=config.STORAGE_TYPE)
 
 if __name__ == '__main__':
     import asyncio
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(funcName)s %(levelname)s %(message)s")
     obj = StorageCommon()
     async def main():
-        data = await obj.items_obj.get_similar_items(branch_id=1, search_name="мол", sim_threshold=0.00000001)
+        data = await obj.branch_schemas_obj.get_data_by_branch_id(branch_id=1)
         print(data)
 
     asyncio.run(main())
