@@ -4,3 +4,5 @@ from .branch_schemas import BranchSchemasDAL
 from .clients import ClientsDAL
 from .items import ItemsDAL
 from .spots import SpotsDAL
+from .branches import BranchesDAL
+from .client_location import ClientLocationDAL

@@ -5,6 +5,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
+from schemas import storage_schem
+
 
 class ItemsListSchem(BaseModel):
     """Схема для валидации когда отравляется запрос на поиск
@@ -18,4 +20,9 @@ class ItemsIDsSchem(BaseModel):
     ids: List[int]
 
 
-
+class SpotResultSchem(BaseModel):
+    """Модель которая является результатом отметки ячеек
+    расположения товаров
+    """
+    spots_data: List[storage_schem.spots_schem.SpotsWithShelvesSchem]
+    download_url: str

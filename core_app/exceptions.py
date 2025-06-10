@@ -32,6 +32,21 @@ class NotFoundError(Exception):
         return f"NotFoundError item_name -> {self.item_name}"
 
 
+class DownloadKeyError(Exception):
+    """Ошибка когда не корректный ключ для скачивания данных изображения"""
+    def __init__(self, key: str, api: str):
+        self.key = key
+        self.error = base_schemas.BaseErrorSchem(
+            name="DownloadKeyError",
+            details=f"not valid download key: <{key}>",
+            api=api,
+            status_code=404
+        )
+
+    def __str__(self):
+        return f"DownloadKeyError key-> {self.key}"
+
+
 class UnknownError(Exception):
     """Неожидаемая ошибка, которую не смогли обработать"""
     def __init__(self, api: str):

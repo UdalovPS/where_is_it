@@ -2,16 +2,19 @@
 Логические объекты для поиска местоположения товаров на полках
 """
 import logging
-from typing import List, Optional
+from typing import List, Optional, Union
+import secrets
 
+import config
 # импортируем логические объекты
 from logics.base_logic import BaseLogic
 from logics.painter import Painter, Shelf, Branch
+from PIL import Image
 
 # импортируем глобальные объекты
 from schemas.base_schemas import BaseResultSchem
 import schemas.storage_schem.items_schem
-from schemas import storage_schem
+from schemas import storage_schem, logic_schem
 import exceptions
 from exception_handler import handle_view_exception
 
@@ -132,21 +135,76 @@ class SpotLogic(BaseLogic):
             if not branch_schem_data:
                 raise exceptions.NotFoundError(item_name="branch_schem_data", api=api)
 
+            # вычисляем координаты расположения ячеек на общей схеме помещения
+            for spot in spots_data:
+                x, y = Shelf(
+                    x1=spot.shelf_data.x1,
+                    y1=spot.shelf_data.y1,
+                    x2=spot.shelf_data.x2,
+                    y2=spot.shelf_data.y2,
+                    cell_count=spot.shelf_data.cell_count,
+                    floor_count=spot.shelf_data.floor_count
+                ).find_coord(cell_index=spot.cell_number)
+                spot.x_spot_coord = x
+                spot.y_spot_coord = y
 
             if route and len(spots_data) > 2:   # логика построения оптимального маршрута
                 # вычисляем координаты расположения ячеек на общей схеме помещения
                 spots_data = self.create_optimal_route(spots_data=spots_data, branch_data=branch_schem_data)
 
-            # отмечаем расположение ячеек на изображении
-            painter = Painter(image_path=branch_schem_data.content.url)
+            # сохраняем данные в КЭШ чтобы потом по ним скачать изображение
+            key = str(secrets.token_hex(32))
 
-            for index, spot in enumerate(spots_data):
+            result = logic_schem.spot_schem.SpotResultSchem(
+                spots_data=spots_data,
+                download_url=f"{config.API_URL}/api/spots/download/{key}"
+            )
+
+            print(f"key: {key}")
+            await self.cache_obj.set_data_in_cache(key=key, value=result, live_time=60)
+
+            return BaseResultSchem[logic_schem.spot_schem.SpotResultSchem](data=result)
+
+        except Exception as _er:
+            return handle_view_exception(ex=_er, api=api)
+
+    async def download_schem(
+            self,
+            download_key: str,
+            token: str,
+            api: str,
+    ) -> Union[Image, BaseResultSchem]:
+        """Отмечаем на изображении координаты ячеек и возвращаем изображение обратно на запрос
+        Args:
+            download_key: ключ для скачивания файла
+            token: токен аутентификации
+            api: раздел API в котором происходит логика
+        """
+        try:
+            logger.info(f"Выполнение задания по скачиванию файла с отмеченными ячейками - {download_key}")
+
+            # аутентификация
+            await self.check_authenticate(token=token, api=api)
+
+            # извлекаем данные из КЭШа по ключу
+            data: logic_schem.spot_schem.SpotResultSchem = await self.cache_obj.get_data_from_cache(
+                key=download_key, data_class=logic_schem.spot_schem.SpotResultSchem
+            )
+            if not data:
+                raise exceptions.DownloadKeyError(key=download_key, api=api)
+
+            branch_schem_data = await self.branch_schemas_obj.get_data_by_branch_id(branch_id=data.spots_data[0].shelf_data.branch_id)
+            if not branch_schem_data:
+                raise exceptions.NotFoundError(item_name="branch_schem_data", api=api)
+
+            # # отмечаем расположение ячеек на изображении
+            painter = Painter(image_path=branch_schem_data.content.url)
+            for index, spot in enumerate(data.spots_data):
                 painter.add_point(x=spot.x_spot_coord, y=spot.y_spot_coord, label=str(index + 1))
 
             painter.save_image("./out.jpg")
 
-            return BaseResultSchem[List[schemas.storage_schem.spots_schem.SpotsWithShelvesSchem]](data=spots_data)
-
+            return painter.image
         except Exception as _er:
             return handle_view_exception(ex=_er, api=api)
 
@@ -165,19 +223,6 @@ class SpotLogic(BaseLogic):
             branch_data: данные филиала вместе с его схемой
         """
         logger.info(f"Логика простраивания оптимального маршрута")
-
-        # вычисляем координаты расположения ячеек на общей схеме помещения
-        for spot in spots_data:
-            x, y = Shelf(
-                x1=spot.shelf_data.x1,
-                y1=spot.shelf_data.y1,
-                x2=spot.shelf_data.x2,
-                y2=spot.shelf_data.y2,
-                cell_count=spot.shelf_data.cell_count,
-                floor_count=spot.shelf_data.floor_count
-            ).find_coord(cell_index=spot.cell_number)
-            spot.x_spot_coord = x
-            spot.y_spot_coord = y
 
         # создаем объект помещения филиала. Для вычисления дальнейшей логики
         branch_obj = Branch(exit_x=branch_data.exit_x, exit_y=branch_data.exit_y)

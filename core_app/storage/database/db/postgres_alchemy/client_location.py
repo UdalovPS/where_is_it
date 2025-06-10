@@ -1,8 +1,7 @@
 """storage/database/db/postgres_alchemy/models/client_location
 Данные по странам
 """
-from typing import Union
-import uuid
+from typing import Union, Any, Optional
 
 from sqlalchemy import text, ForeignKey, select, update, JSON, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,5 +27,37 @@ class ClientLocationTable(Base):
     update_at: Mapped[datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"),
                                                 onupdate=datetime.utcnow, nullable=True)
 
-class ClientLocationDAL(database.BaseBranches):
-    pass
+class ClientLocationDAL(database.BaseClientLocation):
+    async def add_client_location(self, client_id: int, branch_id: int) -> Any:
+        """Абстрактный интерфейс метод для добавления
+        назначения клиенту местонахождения.
+        Args:
+            client_id: идентификатор клиента
+            branch_id: идентификатор строения, которое привязывается к клиенту
+        """
+        pass
+
+    async def update_client_location(self, client_id: int, branch_id: int) -> Optional[storage_schem.clients_schem.LocationSchem]:
+        """Абстрактный интерфейс метод для обновления
+        местоположения клиента.
+        Args:
+            client_id: идентификатор клиента
+            branch_id: идентификатор строения, которое привязывается к клиенту
+        """
+        try:
+            async with async_session_maker() as session:
+                async with session.begin():
+                    query = update(ClientLocationTable).where(
+                        ClientLocationTable.client_id == client_id
+                    ).values(branch_id=branch_id).returning(
+                        ClientLocationTable.id,
+                        ClientLocationTable.client_id,
+                        ClientLocationTable.branch_id
+                    )
+                    res = await session.execute(query)
+                    await session.commit()
+                    updated_data = res.mappings().first()
+                    return storage_schem.clients_schem.LocationSchem.model_validate(updated_data)
+        except Exception as ex:
+            logger.critical(f"Ошибка при обновлении данных локации -> {ex}")
+            return False

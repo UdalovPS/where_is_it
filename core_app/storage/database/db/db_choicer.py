@@ -76,3 +76,27 @@ def choice_spots_obj(db_type: str) -> database.BaseSpot:
         "postgres_alchemy": postgres_alchemy.SpotsDAL
     }
     return choice_db_dict[db_type]()
+
+def choice_branches_obj(db_type: str) -> database.BaseBranches:
+    """Данный метод возвращает объект для взаимодействия с
+    данными филиалов
+    Args:
+        db_type: тип базы данных
+    """
+    choice_db_dict = {
+        "db_test": db_test.ClientTest,
+        "postgres_alchemy": postgres_alchemy.BranchesDAL
+    }
+    return choice_db_dict[db_type]()
+
+def choice_client_location_obj(db_type: str) -> database.BaseClientLocation:
+    """Данный метод возвращает объект для взаимодействия с
+    локацией клиента
+    Args:
+        db_type: тип базы данных
+    """
+    choice_db_dict = {
+        "db_test": db_test.ClientTest,
+        "postgres_alchemy": postgres_alchemy.ClientLocationDAL
+    }
+    return choice_db_dict[db_type]()

@@ -26,3 +26,12 @@ class ClientWithLocationSchem(ClientSchem):
     location: Optional[ClientLocationSchem]
 
 
+class LocationSchem(BaseModel):
+    id: int
+    client_id: int
+    branch_id: int
+
+    class Config:
+        from_attributes = True
+
+

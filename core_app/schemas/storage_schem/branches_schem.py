@@ -3,6 +3,8 @@ import datetime
 
 from pydantic import BaseModel
 
+from schemas.storage_schem import cities_schem
+
 class ContentSchem(BaseModel):
     """Схема контекста изображения"""
     content_path: Any
@@ -58,12 +60,7 @@ class BranchSchema(BaseModel):
     id: int
     name: str
     address: str
-    city_id: int
+    city_data: cities_schem.CitySchem
     organization_id: int
     latitude: float
     longitude: float
-
-    creator_id: Optional[int]
-    updator_id: Optional[int]
-    created_at: datetime.datetime
-    update_at: datetime.datetime

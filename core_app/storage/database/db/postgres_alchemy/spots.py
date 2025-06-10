@@ -60,10 +60,6 @@ class SpotsDAL(database.BaseSpot):
                             sp.item_id,
                             sp.cell_number,
                             sp.floor_number,
-                            sp.creator_id AS spot_creator_id,
-                            sp.updator_id AS spot_updator_id,
-                            sp.created_at AS spot_created_at,
-                            sp.update_at AS spot_update_at,
                             sh.name,
                             sh.branch_id,
                             sh.x1,
@@ -72,10 +68,6 @@ class SpotsDAL(database.BaseSpot):
                             sh.y2,
                             sh.cell_count,
                             sh.floor_count,
-                            sh.creator_id AS shelf_creator_id,
-                            sh.updator_id AS shelf_updator_id,
-                            sh.created_at AS shelf_created_at,
-                            sh.update_at AS shelf_update_at,
                             it.name AS item_name
                         FROM 
                             spots_table sp
@@ -108,10 +100,6 @@ class SpotsDAL(database.BaseSpot):
                             organization_id=row.organization_id,
                             cell_number=row.cell_number,
                             floor_number=row.floor_number,
-                            creator_id=row.spot_creator_id,
-                            updator_id=row.spot_updator_id,
-                            created_at=row.spot_created_at,
-                            update_at=row.spot_update_at,
                             shelf_data = storage_schem.spots_schem.ShelfSchem(
                                 id=row.shelf_id,
                                 name=row.name,
@@ -122,11 +110,7 @@ class SpotsDAL(database.BaseSpot):
                                 x2=row.x2,
                                 y2=row.y2,
                                 cell_count=row.cell_count,
-                                floor_count=row.floor_count,
-                                creator_id=row.shelf_creator_id,
-                                updator_id=row.shelf_updator_id,
-                                created_at=row.shelf_created_at,
-                                update_at=row.shelf_update_at
+                                floor_count=row.floor_count
                             ),
                             item_data = storage_schem.spots_schem.ItemDataSchem(
                                 id=row.item_id,

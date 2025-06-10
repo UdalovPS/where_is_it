@@ -35,11 +35,6 @@ class SpotSchem(BaseModel):
     x_spot_coord: Optional[int] = None
     y_spot_coord: Optional[int] = None
 
-    creator_id: Optional[int]
-    updator_id: Optional[int]
-    created_at: datetime.datetime
-    update_at: datetime.datetime
-
 
 class ShelfSchem(BaseModel):
     id: int
@@ -52,11 +47,6 @@ class ShelfSchem(BaseModel):
     y2: int
     cell_count: int
     floor_count: int
-
-    creator_id: Optional[int]
-    updator_id: Optional[int]
-    created_at: datetime.datetime
-    update_at: datetime.datetime
 
 
 class ItemDataSchem(BaseModel):

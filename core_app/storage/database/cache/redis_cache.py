@@ -31,11 +31,11 @@ class Redis(cache_interface.BaseCache):
             pydantic объект согласно data_class либо None
         """
         try:
-            logger.debug(f"Извлекаю данные из КЭШа по ключу: {key}")
+            logger.info(f"Извлекаю данные из КЭШа по ключу: {key}")
             json_data = await self.redis.get(key)
             if json_data:
                 return data_class.model_validate_json(json_data)
-            logger.debug(f"Данные в КЭШе по ключу: {key} не найдены")
+            logger.info(f"Данные в КЭШе по ключу: {key} не найдены")
         except Exception as _ex:
             logger.warning(f"Ошибка извлечения pydantic по ключу: {key} из redis => {_ex}")
             return None
@@ -48,7 +48,7 @@ class Redis(cache_interface.BaseCache):
             live_time: время в секундах сколько хранится значение в КЭШе
         """
         try:
-            logger.debug(f"Сохраняю pudantic объект в КЭШ по ключу: {key} на {live_time} секунд")
+            logger.info(f"Сохраняю pudantic объект в КЭШ по ключу: {key} на {live_time} секунд")
             await self.redis.set(key, value.model_dump_json(), ex=live_time)
             return True
         except Exception as _ex:

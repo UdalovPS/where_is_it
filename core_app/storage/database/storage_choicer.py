@@ -1,6 +1,7 @@
 from storage.base_interfaces import database
 from . import just_db
 
+
 def choice_customer_obj(storage_type: str) -> database.BaseOrganizations:
     """Данный метод исходя из глобальных настроек выбирает объект
     для взаимодействия с данными заказчика
@@ -56,5 +57,17 @@ def choice_items_obj(storage_type: str) -> database.BaseItems:
 def choice_spots_obj(storage_type: str) -> database.BaseSpot:
     data_dict = {
         "just_db": just_db.SpotsJustDb
+    }
+    return data_dict[storage_type]()
+
+def choice_branches_obj(storage_type: str) -> database.BaseBranches:
+    data_dict = {
+        "just_db": just_db.BranchesJustDb
+    }
+    return data_dict[storage_type]()
+
+def choice_client_location_obj(storage_type: str) -> database.BaseClientLocation:
+    data_dict = {
+        "just_db": just_db.ClientLocationJustDb
     }
     return data_dict[storage_type]()

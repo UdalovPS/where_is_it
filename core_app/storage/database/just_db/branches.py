@@ -1,12 +1,16 @@
-from abc import ABC, abstractmethod
-from typing import  Optional, List
+"""storage/database/just_db/branches"""
+from typing import Optional, List
 
 from schemas import storage_schem
+from storage.base_interfaces import database
+from ..db import db_choicer
+
+import config
 
 
-class BaseBranches(ABC):
-    """Интерфейс класс хранящий данные о строении"""
-    @abstractmethod
+class BranchesJustDb(database.BaseBranches):
+    db = db_choicer.choice_branches_obj(db_type=config.DB_TYPE)
+
     async def get_data_by_geo(
             self,
             organization_id: int,
@@ -21,4 +25,9 @@ class BaseBranches(ABC):
             longitude: долгота от который требуется вести поиск
             limit: кол-во записей, которые нужно вернуть
         """
-        pass
+        return await self.db.get_data_by_geo(
+            organization_id=organization_id,
+            latitude=latitude,
+            longitude=longitude,
+            limit=limit
+        )
