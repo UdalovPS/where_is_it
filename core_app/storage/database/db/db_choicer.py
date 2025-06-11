@@ -100,3 +100,39 @@ def choice_client_location_obj(db_type: str) -> database.BaseClientLocation:
         "postgres_alchemy": postgres_alchemy.ClientLocationDAL
     }
     return choice_db_dict[db_type]()
+
+def choice_countries_obj(db_type: str) -> database.BaseCountry:
+    """Данный метод возвращает объект для взаимодействия с
+    данными стран
+    Args:
+        db_type: тип базы данных
+    """
+    choice_db_dict = {
+        "db_test": db_test.ClientTest,
+        "postgres_alchemy": postgres_alchemy.CountriesDAL
+    }
+    return choice_db_dict[db_type]()
+
+def choice_districts_obj(db_type: str) -> database.BaseDistrict:
+    """Данный метод возвращает объект для взаимодействия с
+    данными регионов
+    Args:
+        db_type: тип базы данных
+    """
+    choice_db_dict = {
+        "db_test": db_test.ClientTest,
+        "postgres_alchemy": postgres_alchemy.DistrictsDAL
+    }
+    return choice_db_dict[db_type]()
+
+def choice_cities_obj(db_type: str) -> database.BaseCity:
+    """Данный метод возвращает объект для взаимодействия с
+    данными населенных пунктов
+    Args:
+        db_type: тип базы данных
+    """
+    choice_db_dict = {
+        "db_test": db_test.ClientTest,
+        "postgres_alchemy": postgres_alchemy.CitiesDAL
+    }
+    return choice_db_dict[db_type]()

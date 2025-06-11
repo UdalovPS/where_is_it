@@ -6,3 +6,6 @@ from .items import ItemsJustDb
 from .spots import SpotsJustDb
 from .branches import BranchesJustDb
 from .client_location import ClientLocationJustDb
+from .countries import CountriesJustDb
+from .districts import DistrictsJustDb
+from .cities import CitiesJustDb

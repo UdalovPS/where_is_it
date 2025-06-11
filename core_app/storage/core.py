@@ -20,6 +20,9 @@ class StorageCommon:
     spots_obj = storage_choicer.choice_spots_obj(storage_type=config.STORAGE_TYPE)
     branches_obj = storage_choicer.choice_branches_obj(storage_type=config.STORAGE_TYPE)
     client_location_obj = storage_choicer.choice_client_location_obj(storage_type=config.STORAGE_TYPE)
+    countries_obj = storage_choicer.choice_countries_obj(storage_type=config.STORAGE_TYPE)
+    district_obj = storage_choicer.choice_district_obj(storage_type=config.STORAGE_TYPE)
+    cities_obj = storage_choicer.choice_cities_obj(storage_type=config.STORAGE_TYPE)
 
 if __name__ == '__main__':
     import asyncio
@@ -27,7 +30,11 @@ if __name__ == '__main__':
     obj = StorageCommon()
     async def main():
         # data = await obj.branches_obj.get_data_by_geo(organization_id=1, latitude=58.022030, longitude=56.271377, limit=3)
-        data = await obj.client_location_obj.update_client_location(client_id=1, branch_id=2)
+        data = await obj.cities_obj.get_similar_by_org_district_and_name(
+            organization_id=1,
+            district_id=1,
+            search_name="test"
+        )
         # print(data)
         print(data)
 

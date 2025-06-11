@@ -22,3 +22,23 @@ class BaseBranches(ABC):
             limit: кол-во записей, которые нужно вернуть
         """
         pass
+
+    @abstractmethod
+    async def get_similar_by_org_city_and_address(
+            self,
+            organization_id: int,
+            city_id: int,
+            search_address: str,
+            limit: int = 3,
+            similarity_threshold: float = 0.1
+    ) -> Optional[List[storage_schem.branches_schem.BranchSchema]]:
+        """Поиск списка похожих названий населенного пункта
+        определенной организации
+        Args:
+            organization_id: идентификатор организации
+            city_id: идентификатор города в котором нужно найти филиал
+            search_address: адрес поиска
+            limit: кол-во извлекаемых записей
+            similarity_threshold: доля похожести после которой запись входит в поле зрения
+        """
+        pass

@@ -1,12 +1,11 @@
 """storage/database/db/postgres_alchemy/models/countries
 Данные по странам
 """
-from typing import Union
-import uuid
+from typing import Optional, List
 
 from sqlalchemy import text, ForeignKey, select, update
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime, timezone
+from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
 import logging
 
 from .alchemy_core import Base, async_session_maker
@@ -32,4 +31,44 @@ class CountriesTable(Base):
 
 
 class CountriesDAL(database.BaseCountry):
-    pass
+    async def get_countries_by_org(self, organization_id: int) -> Optional[List[storage_schem.countries_schem.CountrySchem]]:
+        """Извлекаем список стран одной организации
+        Args:
+              organization_id: идентификатор организации
+        """
+        try:
+            async with async_session_maker() as session:
+                async with session.begin():
+                    query = text("""
+                        SELECT
+                            id,
+                            name,
+                            organization_id
+                        FROM 
+                            countries_table
+                        WHERE 
+                            organization_id = :organization_id 
+                    """)
+
+                    result = await session.execute(
+                        query,
+                        {"organization_id": organization_id}
+                    )
+                    rows = result.fetchall()
+
+                    if not rows:
+                        return None
+
+                    return [
+                        storage_schem.countries_schem.CountrySchem(
+                            id=row.id,
+                            name=row.id,
+                            organization_id=row.organization_id
+                        ) for row in rows
+                    ]
+
+
+        except Exception as ex:
+            logger.warning(
+                f"Ошибка при извлечении стран одной организации: {organization_id} -> {ex}")
+            return None

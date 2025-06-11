@@ -1,6 +1,8 @@
 """storage/database/just_db/branches"""
 from typing import Optional, List
 
+from watchfiles import awatch
+
 from schemas import storage_schem
 from storage.base_interfaces import database
 from ..db import db_choicer
@@ -30,4 +32,29 @@ class BranchesJustDb(database.BaseBranches):
             latitude=latitude,
             longitude=longitude,
             limit=limit
+        )
+
+    async def get_similar_by_org_city_and_address(
+            self,
+            organization_id: int,
+            city_id: int,
+            search_address: str,
+            limit: int = 3,
+            similarity_threshold: float = 0.1
+    ) -> Optional[List[storage_schem.branches_schem.BranchSchema]]:
+        """Поиск списка похожих названий населенного пункта
+        определенной организации
+        Args:
+            organization_id: идентификатор организации
+            city_id: идентификатор города в котором нужно найти филиал
+            search_address: адрес поиска
+            limit: кол-во извлекаемых записей
+            similarity_threshold: доля похожести после которой запись входит в поле зрения
+        """
+        return await self.db.get_similar_by_org_city_and_address(
+            organization_id=organization_id,
+            city_id=city_id,
+            search_address=search_address,
+            limit=limit,
+            similarity_threshold=similarity_threshold
         )

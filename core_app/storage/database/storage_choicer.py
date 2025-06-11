@@ -71,3 +71,21 @@ def choice_client_location_obj(storage_type: str) -> database.BaseClientLocation
         "just_db": just_db.ClientLocationJustDb
     }
     return data_dict[storage_type]()
+
+def choice_countries_obj(storage_type: str) -> database.BaseCountry:
+    data_dict = {
+        "just_db": just_db.CountriesJustDb
+    }
+    return data_dict[storage_type]()
+
+def choice_district_obj(storage_type: str) -> database.BaseDistrict:
+    data_dict = {
+        "just_db": just_db.DistrictsJustDb
+    }
+    return data_dict[storage_type]()
+
+def choice_cities_obj(storage_type: str) -> database.BaseCity:
+    data_dict = {
+        "just_db": just_db.CitiesJustDb
+    }
+    return data_dict[storage_type]()

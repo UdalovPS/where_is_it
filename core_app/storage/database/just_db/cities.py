@@ -1,12 +1,19 @@
-from abc import ABC, abstractmethod
+"""storage/database/just_db/cities"""
 from typing import Optional, List
 
 from schemas import storage_schem
+from storage.base_interfaces import database
+from ..db import db_choicer
+
+import config
 
 
-class BaseCity(ABC):
-    """Интерфейс класс хранящий данные о городе"""
-    @abstractmethod
+class CitiesJustDb(database.BaseCity):
+    """Данный объект отвечает за взаимодействие с БД
+    касающимися регионов
+    """
+    db = db_choicer.choice_cities_obj(db_type=config.DB_TYPE)
+
     async def get_similar_by_org_district_and_name(
             self,
             organization_id: int,
@@ -24,4 +31,10 @@ class BaseCity(ABC):
             limit: кол-во извлекаемых записей
             similarity_threshold: доля похожести после которой запись входит в поле зрения
         """
-        pass
+        return await self.db.get_similar_by_org_district_and_name(
+            organization_id=organization_id,
+            search_name=search_name,
+            limit=limit,
+            similarity_threshold=similarity_threshold,
+            district_id=district_id
+        )

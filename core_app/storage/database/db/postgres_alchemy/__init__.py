@@ -6,3 +6,6 @@ from .items import ItemsDAL
 from .spots import SpotsDAL
 from .branches import BranchesDAL
 from .client_location import ClientLocationDAL
+from .countries import CountriesDAL
+from .districts import DistrictsDAL
+from .cities import CitiesDAL

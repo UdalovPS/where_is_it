@@ -124,3 +124,97 @@ class BranchesDAL(database.BaseBranches):
                 f"organization_id: {organization_id} latitude: {latitude}, "
                 f"longitude: {longitude}, limit: {limit} -> {ex}")
             return None
+
+    async def get_similar_by_org_city_and_address(
+            self,
+            organization_id: int,
+            city_id: int,
+            search_address: str,
+            limit: int = 3,
+            similarity_threshold: float = 0.1
+    ) -> Optional[List[storage_schem.branches_schem.BranchSchema]]:
+        """Поиск списка похожих названий населенного пункта
+        определенной организации
+        Args:
+            organization_id: идентификатор организации
+            city_id: идентификатор города в котором нужно найти филиал
+            search_address: адрес поиска
+            limit: кол-во извлекаемых записей
+            similarity_threshold: доля похожести после которой запись входит в поле зрения
+        """
+        try:
+            async with async_session_maker() as session:
+                async with session.begin():
+                    query = text("""
+                        SELECT
+                            br.id AS branch_id,
+                            br.name as branch_name,
+                            br.address,
+                            br.organization_id,
+                            latitude,
+                            longitude,
+                            ci.id AS city_id,
+                            ci.name AS city_name,
+                            di.id AS district_id,
+                            di.name AS district_name,
+                            similarity(ci.name, :search_address) AS similarity_score,
+                            co.id AS country_id,
+                            co.name AS country_name
+                        FROM
+                            branches_table br
+                        JOIN 
+                            cities_table ci ON ci.id = br.city_id
+                        JOIN 
+                            districts_table di ON di.id = ci.district_id
+                        JOIN 
+                            countries_table co ON co.id = di.country_id
+                        WHERE 
+                            br.organization_id = :organization_id
+                            AND similarity(br.address, :search_address) > :similarity_threshold
+                            AND br.city_id = :city_id
+                        ORDER BY 
+                            similarity_score DESC
+                        LIMIT 
+                            :limit
+                    """)
+
+                    result = await session.execute(
+                        query,
+                        {"organization_id": organization_id, "search_address": search_address,
+                         "similarity_threshold": similarity_threshold, "limit": limit,
+                         "city_id": city_id}
+                    )
+                    rows = result.fetchall()
+
+                    if not rows:
+                        return None
+                    return [
+                        storage_schem.branches_schem.BranchSchema(
+                            id=row.branch_id,
+                            name=row.branch_name,
+                            address=row.address,
+                            organization_id=row.organization_id,
+                            latitude=row.latitude,
+                            longitude=row.longitude,
+                            city_data=storage_schem.cities_schem.CitySchem(
+                                id=row.city_id,
+                                name=row.city_name,
+                                organization_id=row.organization_id,
+                                district_data=storage_schem.districts_schem.DistrictSchem(
+                                    id=row.district_id,
+                                    name=row.district_name,
+                                    organization_id=row.organization_id,
+                                    country_data=storage_schem.countries_schem.CountrySchem(
+                                        id=row.country_id,
+                                        name=row.country_name,
+                                        organization_id=row.organization_id
+                                    )
+                                )
+                            )
+                        )  for row in rows
+                    ]
+
+        except Exception as ex:
+            logger.critical(
+                f"Ошибка при поиске адреса. {organization_id}, {city_id} {search_address} -> {ex}")
+            return None
