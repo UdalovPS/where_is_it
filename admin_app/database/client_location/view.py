@@ -10,6 +10,7 @@ class ClientLocationView(ModelView):
         ClientLocationTable.id,
         ClientLocationTable.client,
         ClientLocationTable.branch,
+        ClientLocationTable.organization,
         ClientLocationTable.created_at,
         ClientLocationTable.update_at
     ]

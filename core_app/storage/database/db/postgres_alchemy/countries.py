@@ -62,7 +62,7 @@ class CountriesDAL(database.BaseCountry):
                     return [
                         storage_schem.countries_schem.CountrySchem(
                             id=row.id,
-                            name=row.id,
+                            name=row.name,
                             organization_id=row.organization_id
                         ) for row in rows
                     ]

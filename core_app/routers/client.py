@@ -53,7 +53,6 @@ async def get_product_name(
     else:
         return JSONResponse(status_code=200, content=res.model_dump())
 
-
 @router.patch("/location")
 async def update_client_location(
         frontend_id: int,
@@ -71,6 +70,145 @@ async def update_client_location(
         api="client/location"
     )
     # проверяем не произошла ли ошибка
+    if res.error:
+        return JSONResponse(status_code=res.error.status_code, content=res.model_dump())
+    else:
+        return JSONResponse(status_code=200, content=res.model_dump())
+
+@router.get("/countries")
+async def get_countries(
+        frontend_id: int,
+        frontend_service_id: int,
+        token: str,
+        logic_obj: ClientLogic = Depends(ClientLogic)
+):
+    """Извлечение списка стран относящихся к определенной организации"""
+    res = await logic_obj.get_countries(
+        frontend_id=frontend_id,
+        frontend_service_id=frontend_service_id,
+        token=token,
+        api="client/counties"
+    )
+    if res.error:
+        return JSONResponse(status_code=res.error.status_code, content=res.model_dump())
+    else:
+        return JSONResponse(status_code=200, content=res.model_dump())
+
+@router.get("/districts")
+async def get_districts(
+        frontend_id: int,
+        frontend_service_id: int,
+        search_name: str,
+        country_id: int,
+        token: str,
+        limit: int = 3,
+        similarity_threshold: float = 0.1,
+        logic_obj: ClientLogic = Depends(ClientLogic)
+):
+    """Извлечение списка регионов по имени"""
+    res = await logic_obj.get_districts_by_name(
+        frontend_id=frontend_id,
+        frontend_service_id=frontend_service_id,
+        search_name=search_name,
+        country_id=country_id,
+        limit=limit,
+        similarity_threshold=similarity_threshold,
+        token=token,
+        api="client/districts"
+    )
+    if res.error:
+        return JSONResponse(status_code=res.error.status_code, content=res.model_dump())
+    else:
+        return JSONResponse(status_code=200, content=res.model_dump())
+
+@router.get("/cities")
+async def get_cities(
+        frontend_id: int,
+        frontend_service_id: int,
+        search_name: str,
+        district_id: int,
+        token: str,
+        limit: int = 3,
+        similarity_threshold: float = 0.1,
+        logic_obj: ClientLogic = Depends(ClientLogic)
+):
+    """Извлечение списка городов по имени"""
+    res = await logic_obj.get_city_by_name(
+        frontend_id=frontend_id,
+        frontend_service_id=frontend_service_id,
+        search_name=search_name,
+        district_id=district_id,
+        limit=limit,
+        similarity_threshold=similarity_threshold,
+        token=token,
+        api="client/cities"
+    )
+    if res.error:
+        return JSONResponse(status_code=res.error.status_code, content=res.model_dump())
+    else:
+        return JSONResponse(status_code=200, content=res.model_dump())
+
+@router.get("/branches")
+async def get_cities(
+        frontend_id: int,
+        frontend_service_id: int,
+        search_address: str,
+        city_id: int,
+        token: str,
+        limit: int = 3,
+        similarity_threshold: float = 0.1,
+        logic_obj: ClientLogic = Depends(ClientLogic)
+):
+    """Извлечение списка городов по имени"""
+    res = await logic_obj.get_branches_by_name(
+        frontend_id=frontend_id,
+        frontend_service_id=frontend_service_id,
+        search_address=search_address,
+        city_id=city_id,
+        limit=limit,
+        similarity_threshold=similarity_threshold,
+        token=token,
+        api="client/branches"
+    )
+    if res.error:
+        return JSONResponse(status_code=res.error.status_code, content=res.model_dump())
+    else:
+        return JSONResponse(status_code=200, content=res.model_dump())
+
+@router.get("/")
+async def get_client_data(
+        frontend_id: int,
+        frontend_service_id: int,
+        token: str,
+        logic_obj: ClientLogic = Depends(ClientLogic)
+):
+    """Извлечение данных клиента"""
+    res = await logic_obj.get_client_data(
+        frontend_id=frontend_id,
+        frontend_service_id=frontend_service_id,
+        token=token,
+        api="client/client_data"
+    )
+    if res.error:
+        return JSONResponse(status_code=res.error.status_code, content=res.model_dump())
+    else:
+        return JSONResponse(status_code=200, content=res.model_dump())
+
+@router.post("/")
+async def add_new_client_data(
+data: logic_schem.spot_schem.AddClientSchem,
+        token: str,
+        logic_obj: ClientLogic = Depends(ClientLogic)
+):
+    """Добавление нового клиента"""
+    res = await logic_obj.add_new_client_data(
+        frontend_id=data.frontend_id,
+        frontend_service_id=data.frontend_service_id,
+        name=data.name,
+        frontend_data=data.frontend_data,
+        token=token,
+        api="client/client_data"
+    )
     if res.error:
         return JSONResponse(status_code=res.error.status_code, content=res.model_dump())
     else:

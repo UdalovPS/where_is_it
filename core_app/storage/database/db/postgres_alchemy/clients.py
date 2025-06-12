@@ -1,17 +1,18 @@
 """storage/database/db/postgres_alchemy/models/clients
 Данные по странам
 """
-from typing import Optional
+from typing import Optional, Dict
 
-from sqlalchemy import text, ForeignKey, select, update, JSON, Column, BigInteger
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime, timezone
+from sqlalchemy import text, ForeignKey, JSON, Column, BigInteger
+from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
 import logging
 
 from .alchemy_core import Base, async_session_maker
 
 from storage.base_interfaces import database
 from schemas import storage_schem
+from storage.database.db.postgres_alchemy.frontend_service import FrontendServicesTable
 
 
 logger = logging.getLogger(__name__)
@@ -33,42 +34,45 @@ class ClientsDAL(database.BaseClient):
     async def get_data_by_frontend_id(
             self,
             frontend_id: int,
-            frontend_service_id: int
+            frontend_service_id: int,
+            organization_id: int
     ) -> Optional[storage_schem.clients_schem.ClientWithLocationSchem]:
         """Извлечение данных клиента по типу мессенджера и ID из данного мессенджера
         Args:
             frontend_id: идентификатор клиента во внешнем фронтенд сервисе
             frontend_service_id: идентификатор фронтенд сервиса
+            organization_id: идентификатор организации
         """
         try:
             async with async_session_maker() as session:
                 async with session.begin():
-                    # Execute raw SQL query
                     query = text("""
-                            SELECT 
-                                c.id AS client_id,
-                                c.name AS client_name,
-                                c.frontend_service_id,
-                                c.frontend_id,
-                                c.frontend_data,
-                                c.created_at AS client_created_at,
-                                c.update_at AS client_updated_at,
-                                cl.id AS location_id,
-                                cl.branch_id,
-                                cl.created_at AS location_created_at,
-                                cl.update_at AS location_updated_at
-                            FROM 
-                                clients_table c
-                            LEFT JOIN 
-                                client_location_table cl ON c.id = cl.client_id
-                            WHERE 
-                                c.frontend_id = :frontend_id 
-                                AND c.frontend_service_id = :frontend_service_id
-                        """)
+                        SELECT 
+                            c.id AS client_id,
+                            c.name AS client_name,
+                            c.frontend_service_id,
+                            c.frontend_id,
+                            c.frontend_data,
+                            c.created_at AS client_created_at,
+                            c.update_at AS client_updated_at,
+                            cl.id AS location_id,
+                            cl.branch_id,
+                            cl.organization_id,
+                            cl.created_at AS location_created_at,
+                            cl.update_at AS location_updated_at
+                        FROM 
+                            clients_table c
+                        LEFT JOIN 
+                            client_location_table cl ON c.id = cl.client_id 
+                            AND cl.organization_id =  :organization_id
+                        WHERE 
+                            c.frontend_id = :frontend_id 
+                            AND c.frontend_service_id = :frontend_service_id
+                    """)
 
                     result = await session.execute(
                         query,
-                        {"frontend_id": frontend_id, "frontend_service_id": frontend_service_id}
+                        {"frontend_id": frontend_id, "frontend_service_id": frontend_service_id, "organization_id": organization_id}
                     )
                     row = result.fetchone()
 
@@ -84,6 +88,7 @@ class ClientsDAL(database.BaseClient):
                         location = storage_schem.clients_schem.ClientLocationSchem(
                             id=row_dict["location_id"],
                             branch_id=row_dict["branch_id"],
+                            organization_id=row_dict["organization_id"],
                             created_at=row_dict["location_created_at"],
                             update_at=row_dict["location_updated_at"]
                         )
@@ -105,3 +110,32 @@ class ClientsDAL(database.BaseClient):
         except Exception as ex:
             logger.warning(f"Ошибка при извлечении данных клиента вместе с локацией: {frontend_id}, {frontend_service_id} -> {ex}")
             return None
+
+    async def add_new_client(
+            self,
+            name: str,
+            frontend_service_id: int,
+            frontend_id: int,
+            frontend_data: Optional[Dict] = None
+    ) -> Optional[storage_schem.clients_schem.ClientWithLocationSchem]:
+        """Добавление в БД данных нового клиента
+        Args:
+            name: имя клиента
+            frontend_service_id: идентификатор фронтенд сервиса (1 - telegram)
+            frontend_id: идентификатор клиента во фронтенд сервисе
+            frontend_data: дополнительные данные о клиенте
+        """
+        try:
+            async with async_session_maker() as session:
+                async with session.begin():
+                    data = ClientsTable(
+                        name=name,
+                        frontend_service_id=frontend_service_id,
+                        frontend_id=frontend_id,
+                        frontend_data=frontend_data
+                    )
+                    session.add(data)
+                    await session.flush()
+                    return storage_schem.clients_schem.ClientWithLocationSchem.model_validate(data, from_attributes=True)
+        except Exception as _ex:
+            logger.critical(f"Ошибка при добавлении данных нового клиента -> {_ex}")

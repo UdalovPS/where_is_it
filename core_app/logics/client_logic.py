@@ -2,11 +2,8 @@
 Модуль с бизнес логикой клиента
 """
 
-"""logics/spots_logic
-Логические объекты для поиска местоположения товаров на полках
-"""
 import logging
-from typing import List
+from typing import List, Optional, Dict
 
 # импортируем логические объекты
 from logics.base_logic import BaseLogic
@@ -33,7 +30,7 @@ class ClientLogic(BaseLogic):
             token: str,
             api: str,
             limit: int = 3
-    ):
+    ) -> BaseResultSchem[List[storage_schem.branches_schem.BranchSchema]]:
         """Поиск ближайших филиалов по геолокации
         Args:
             frontend_id: идентификатор клиента из frontend сервиса который обращается к API
@@ -74,7 +71,7 @@ class ClientLogic(BaseLogic):
             branch_id: int,
             token: str,
             api: str,
-    ):
+    ) -> BaseResultSchem[storage_schem.clients_schem.LocationSchem]:
         """Изменение локации клиента
         Args:
             frontend_id: идентификатор клиента из frontend сервиса который обращается к API
@@ -86,21 +83,246 @@ class ClientLogic(BaseLogic):
         try:
             logger.info(f"Обрабатываю логику обновления локации пользователя frontend_id: {frontend_id}, "
                         f"frontend_service_id: {frontend_service_id}, branch_id: {branch_id}")
-
             # аутентификация
             await self.check_authenticate(token=token, api=api)
-
             # находим данные клиента
-            client_data = await self.client_obj.get_data_by_frontend_id(frontend_id=frontend_id, frontend_service_id=frontend_service_id)
+            client_data = await self.client_obj.get_data_by_frontend_id(
+                frontend_id=frontend_id,
+                frontend_service_id=frontend_service_id,
+                organization_id=self.ORGANIZATION_ID
+            )
             if not client_data:
                 # если не найдены данные клиента то вызываем ошибку
                 raise exceptions.NotFoundError(item_name="client_data", api=api)
 
-            # поиск ближайших точек
-            update = await self.client_location_obj.update_client_location(
-                client_id=client_data.id, branch_id=branch_id
-            )
+            if client_data.location:
+                location = await self.client_location_obj.update_client_location(
+                    client_id=client_data.id, branch_id=branch_id
+                )
+            else:
+                location = await self.client_location_obj.add_client_location(
+                    client_id=client_data.id,
+                    branch_id=branch_id,
+                    organization_id=self.ORGANIZATION_ID
+                )
+                if not location:
+                    raise exceptions.UpdateLocationError(api=api)
+            return BaseResultSchem[storage_schem.clients_schem.LocationSchem](data=location)
+        except Exception as _er:
+            return handle_view_exception(ex=_er, api=api)
 
-            return BaseResultSchem[storage_schem.clients_schem.LocationSchem](data=update)
+    async def get_countries(
+            self,
+            frontend_id: int,
+            frontend_service_id: int,
+            token: str,
+            api: str,
+    ):
+        """Извлечение списка стран определенной организации
+        Args:
+            frontend_id: идентификатор клиента из frontend сервиса который обращается к API
+            frontend_service_id: тип frontend сервиса который взаимодействует с системой
+            token: токен аутентификации
+            api: раздел в котором происходит действие
+        """
+        try:
+            logger.info(f"Обрабатываю логику извлечения списка стран. frontend_id: "
+                        f"{frontend_id}, frontend_service_id: {frontend_service_id}")
+            # аутентификация
+            await self.check_authenticate(token=token, api=api)
+            countries = await self.countries_obj.get_countries_by_org(organization_id=self.ORGANIZATION_ID)
+            if not countries:
+                raise exceptions.NotFoundError(item_name="countries_data", api=api)
+            return BaseResultSchem[List[storage_schem.countries_schem.CountrySchem]](data=countries)
+        except Exception as _er:
+            return handle_view_exception(ex=_er, api=api)
+
+    async def get_districts_by_name(
+            self,
+            frontend_id: int,
+            frontend_service_id: int,
+            search_name: str,
+            country_id: int,
+            limit: int,
+            similarity_threshold: float,
+            token: str,
+            api: str,
+    ):
+        """Извлечение списка стран определенной организации
+        Args:
+            frontend_id: идентификатор клиента из frontend сервиса который обращается к API
+            frontend_service_id: тип frontend сервиса который взаимодействует с системой
+            search_name: наименование региона по которому осуществляется поиск
+            country_id: идентификатор страны
+            limit: кол-во записей которые нужно извлечь
+            similarity_threshold: процент похожести
+            token: токен аутентификации
+            api: раздел в котором происходит действие
+        """
+        try:
+            logger.info(f"Обрабатываю логику извлечения регионов. frontend_id: "
+                        f"{frontend_id}, frontend_service_id: {frontend_service_id}, "
+                        f"search_name: {search_name}, country_id: {country_id}, "
+                        f"limit: {limit}, similarity_threshold: {similarity_threshold}")
+            # аутентификация
+            await self.check_authenticate(token=token, api=api)
+            districts = await self.district_obj.get_similar_by_org_country_and_name(
+                organization_id=self.ORGANIZATION_ID,
+                search_name=search_name,
+                country_id=country_id,
+                limit=limit,
+                similarity_threshold=similarity_threshold
+            )
+            if not districts:
+                raise exceptions.NotFoundError(item_name="districts_data", api=api)
+            return BaseResultSchem[List[storage_schem.districts_schem.DistrictSchem]](data=districts)
+        except Exception as _er:
+            return handle_view_exception(ex=_er, api=api)
+
+    async def get_city_by_name(
+            self,
+            frontend_id: int,
+            frontend_service_id: int,
+            search_name: str,
+            district_id: int,
+            limit: int,
+            similarity_threshold: float,
+            token: str,
+            api: str,
+    ):
+        """Извлечение списка городов
+        Args:
+            frontend_id: идентификатор клиента из frontend сервиса который обращается к API
+            frontend_service_id: тип frontend сервиса который взаимодействует с системой
+            search_name: наименование региона по которому осуществляется поиск
+            district_id: идентификатор региона
+            limit: кол-во записей которые нужно извлечь
+            similarity_threshold: процент похожести
+            token: токен аутентификации
+            api: раздел в котором происходит действие
+        """
+        try:
+            logger.info(f"Обрабатываю логику извлечения городов. frontend_id: "
+                        f"{frontend_id}, frontend_service_id: {frontend_service_id}, "
+                        f"search_name: {search_name}, district_id: {district_id}, "
+                        f"limit: {limit}, similarity_threshold: {similarity_threshold}")
+            # аутентификация
+            await self.check_authenticate(token=token, api=api)
+            cities = await self.cities_obj.get_similar_by_org_district_and_name(
+                organization_id=self.ORGANIZATION_ID,
+                search_name=search_name,
+                district_id=district_id,
+                limit=limit,
+                similarity_threshold=similarity_threshold
+            )
+            if not cities:
+                raise exceptions.NotFoundError(item_name="cities_data", api=api)
+            return BaseResultSchem[List[storage_schem.cities_schem.CitySchem]](data=cities)
+        except Exception as _er:
+            return handle_view_exception(ex=_er, api=api)
+
+    async def get_branches_by_name(
+            self,
+            frontend_id: int,
+            frontend_service_id: int,
+            search_address: str,
+            city_id: int,
+            limit: int,
+            similarity_threshold: float,
+            token: str,
+            api: str,
+    ):
+        """Извлечение списка адресов
+        Args:
+            frontend_id: идентификатор клиента из frontend сервиса который обращается к API
+            frontend_service_id: тип frontend сервиса который взаимодействует с системой
+            search_address: адрес по которому происходит поиск
+            city_id: идентификатор города
+            limit: кол-во записей которые нужно извлечь
+            similarity_threshold: процент похожести
+            token: токен аутентификации
+            api: раздел в котором происходит действие
+        """
+        try:
+            logger.info(f"Обрабатываю логику извлечения адресов frontend_id: "
+                        f"{frontend_id}, frontend_service_id: {frontend_service_id}, "
+                        f"search_address: {search_address}, city_id: {city_id}, "
+                        f"limit: {limit}, similarity_threshold: {similarity_threshold}")
+            # аутентификация
+            await self.check_authenticate(token=token, api=api)
+            branches = await self.branches_obj.get_similar_by_org_city_and_address(
+                organization_id=self.ORGANIZATION_ID,
+                search_address=search_address,
+                city_id=city_id,
+                limit=limit,
+                similarity_threshold=similarity_threshold
+            )
+            if not branches:
+                raise exceptions.NotFoundError(item_name="branches_data", api=api)
+            return BaseResultSchem[List[storage_schem.branches_schem.BranchSchema]](data=branches)
+        except Exception as _er:
+            return handle_view_exception(ex=_er, api=api)
+
+    async def get_client_data(
+            self,
+            frontend_id: int,
+            frontend_service_id: int,
+            token: str,
+            api: str,
+    ):
+        """Извлечение данных клиента
+        Args:
+            frontend_id: идентификатор клиента из frontend сервиса который обращается к API
+            frontend_service_id: тип frontend сервиса который взаимодействует с системой
+            token: токен аутентификации
+            api: раздел в котором происходит действие
+        """
+        try:
+            logger.info(f"Обрабатываю логику извлечения данных клиента. "
+                        f"frontend_id: {frontend_id}, frontend_service_id: {frontend_service_id}")
+            # аутентификация
+            await self.check_authenticate(token=token, api=api)
+            # получаем данные клиента
+            client_data = await self.client_obj.get_data_by_frontend_id(
+                frontend_id=frontend_id,
+                frontend_service_id=frontend_service_id,
+                organization_id=self.ORGANIZATION_ID
+            )
+            if not client_data:
+                # если не найдены данные клиента то вызываем ошибку
+                raise exceptions.NotFoundError(item_name="client_data", api=api)
+            return BaseResultSchem[storage_schem.clients_schem.ClientWithLocationSchem](data=client_data)
+        except Exception as _er:
+            return handle_view_exception(ex=_er, api=api)
+
+    async def add_new_client_data(
+            self,
+            frontend_id: int,
+            frontend_service_id: int,
+            name: str,
+            token: str,
+            api: str,
+            frontend_data: Optional[Dict] = None,
+    ):
+        """Добавления нового клиента в БД
+        Args:
+            frontend_id: идентификатор клиента из frontend сервиса который обращается к API
+            frontend_service_id: тип frontend сервиса который взаимодействует с системой
+            token: токен аутентификации
+            api: раздел в котором происходит действие
+        """
+        try:
+            # аутентификация
+            await self.check_authenticate(token=token, api=api)
+
+            new_client = await self.client_obj.add_new_client(
+                name=name,
+                frontend_service_id=frontend_service_id,
+                frontend_id=frontend_id,
+                frontend_data=frontend_data
+            )
+            if not new_client:
+                raise exceptions.AddError(api=api, item="client_data")
+            return BaseResultSchem[storage_schem.clients_schem.ClientWithLocationSchem](data=new_client)
         except Exception as _er:
             return handle_view_exception(ex=_er, api=api)

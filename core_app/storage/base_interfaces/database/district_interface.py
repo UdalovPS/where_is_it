@@ -3,6 +3,7 @@ from typing import Optional, List
 
 from schemas import storage_schem
 
+
 class BaseDistrict(ABC):
     """Интерфейс класс хранящий данные о регионе"""
     @abstractmethod

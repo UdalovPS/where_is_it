@@ -1,7 +1,7 @@
 """core_app/schemas/logic_schem/spot_shem
 В данном модуле находятся схемы, относящиеся к бизнес логике
 """
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pydantic import BaseModel
 
@@ -26,3 +26,10 @@ class SpotResultSchem(BaseModel):
     """
     spots_data: List[storage_schem.spots_schem.SpotsWithShelvesSchem]
     download_url: str
+
+
+class AddClientSchem(BaseModel):
+    name: str
+    frontend_service_id: int
+    frontend_id: int
+    frontend_data: Optional[Dict] = None
