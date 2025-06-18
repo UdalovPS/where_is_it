@@ -14,6 +14,7 @@ class ItemsJustDb(database.BaseItems):
     async def get_similar_items(
             self, branch_id: int,
             search_name: str,
+            organization_id: int,
             sim_threshold: float = 0.1,
             count: int = 10
     ) -> Optional[List[storage_schem.items_schem.SimilarItemsSchem]]:
@@ -22,6 +23,7 @@ class ItemsJustDb(database.BaseItems):
         Args:
             branch_id: идентификатор филиала
             search_name: наименование по которому ведется поиск товара
+            organization_id: идентификатор организации
             sim_threshold: процент похожести, по которому выдается поиск из БД
             count: кол-во записей которое нужно извлечь из БД
         """
@@ -29,5 +31,6 @@ class ItemsJustDb(database.BaseItems):
             branch_id=branch_id,
             search_name=search_name,
             sim_threshold=sim_threshold,
-            count=count
+            count=count,
+            organization_id=organization_id
         )

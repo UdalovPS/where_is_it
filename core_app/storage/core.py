@@ -30,17 +30,9 @@ if __name__ == '__main__':
     obj = StorageCommon()
     async def main():
         # data = await obj.branches_obj.get_data_by_geo(organization_id=1, latitude=58.022030, longitude=56.271377, limit=3)
-        data = await obj.client_obj.get_data_by_frontend_id(
-            frontend_id=1, frontend_service_id=1, organization_id=1
+        data = await obj.branches_obj.get_branch_data_by_id(
+            node_id=1
         )
-        print(data)
-        data = await obj.client_obj.add_new_client(
-            name="tesst",
-            frontend_service_id=1,
-            frontend_id=1,
-            frontend_data={1: 1}
-        )
-        # print(data)
         print(data)
 
     asyncio.run(main())

@@ -85,6 +85,14 @@ class ClientLogic(BaseLogic):
                         f"frontend_service_id: {frontend_service_id}, branch_id: {branch_id}")
             # аутентификация
             await self.check_authenticate(token=token, api=api)
+
+            # извлекаем данные помещения
+            branch_data = await self.branches_obj.get_branch_data_by_id(node_id=branch_id)
+            if branch_data.organization_id != self.ORGANIZATION_ID:
+                raise exceptions.AccessError(api=api)
+            if not branch_data:
+                raise exceptions.NotFoundError(item_name="branch_data", api=api)
+
             # находим данные клиента
             client_data = await self.client_obj.get_data_by_frontend_id(
                 frontend_id=frontend_id,
@@ -97,7 +105,7 @@ class ClientLogic(BaseLogic):
 
             if client_data.location:
                 location = await self.client_location_obj.update_client_location(
-                    client_id=client_data.id, branch_id=branch_id
+                    client_id=client_data.id, branch_id=branch_id, organization_id=self.ORGANIZATION_ID
                 )
             else:
                 location = await self.client_location_obj.add_client_location(
@@ -117,7 +125,7 @@ class ClientLogic(BaseLogic):
             frontend_service_id: int,
             token: str,
             api: str,
-    ):
+    ) -> BaseResultSchem[List[storage_schem.countries_schem.CountrySchem]]:
         """Извлечение списка стран определенной организации
         Args:
             frontend_id: идентификатор клиента из frontend сервиса который обращается к API
@@ -269,7 +277,7 @@ class ClientLogic(BaseLogic):
             frontend_service_id: int,
             token: str,
             api: str,
-    ):
+    ) -> BaseResultSchem[storage_schem.clients_schem.ClientWithLocationSchem]:
         """Извлечение данных клиента
         Args:
             frontend_id: идентификатор клиента из frontend сервиса который обращается к API
@@ -303,13 +311,15 @@ class ClientLogic(BaseLogic):
             token: str,
             api: str,
             frontend_data: Optional[Dict] = None,
-    ):
+    ) -> BaseResultSchem[storage_schem.clients_schem.ClientWithLocationSchem]:
         """Добавления нового клиента в БД
         Args:
             frontend_id: идентификатор клиента из frontend сервиса который обращается к API
             frontend_service_id: тип frontend сервиса который взаимодействует с системой
+            name: имя клиента
             token: токен аутентификации
             api: раздел в котором происходит действие
+            frontend_data: данные клиента персональный для каждого типа мессенджера
         """
         try:
             # аутентификация

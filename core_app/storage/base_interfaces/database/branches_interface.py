@@ -42,3 +42,11 @@ class BaseBranches(ABC):
             similarity_threshold: доля похожести после которой запись входит в поле зрения
         """
         pass
+
+    @abstractmethod
+    async def get_branch_data_by_id(self, node_id: int) -> Optional[storage_schem.branches_schem.BranchSchema]:
+        """Извлекаем данные филиала по его ID
+        Args:
+            node_id: идентификатор записи
+        """
+        pass

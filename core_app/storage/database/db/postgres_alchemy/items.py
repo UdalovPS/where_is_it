@@ -42,6 +42,7 @@ class ItemsDAL(database.BaseItems):
     async def get_similar_items(
             self, branch_id: int,
             search_name: str,
+            organization_id: int,
             sim_threshold: float = 0.1,
             count: int = 10
     ) -> Optional[List[storage_schem.items_schem.SimilarItemsSchem]]:
@@ -50,6 +51,7 @@ class ItemsDAL(database.BaseItems):
         Args:
             branch_id: идентификатор филиала
             search_name: наименование по которому ведется поиск товара
+            organization_id: идентификатор организации
             sim_threshold: процент похожести, по которому выдается поиск из БД
             count: кол-во записей которое нужно извлечь из БД
         """
@@ -75,6 +77,7 @@ class ItemsDAL(database.BaseItems):
                         WHERE 
                             b.id = :branch_id
                             AND similarity(i.name, :search_name) > :similarity_threshold
+                            AND i.organization_id = :organization_id
                         ORDER BY 
                             similarity_score DESC
                         LIMIT :count
@@ -82,7 +85,13 @@ class ItemsDAL(database.BaseItems):
 
                     result = await session.execute(
                         query,
-                        {"branch_id": branch_id, "search_name": search_name, "similarity_threshold": sim_threshold, "count": count}
+                        {
+                            "branch_id": branch_id,
+                            "search_name": search_name,
+                            "similarity_threshold": sim_threshold,
+                            "count": count,
+                            "organization_id": organization_id
+                        }
                     )
                     rows = result.fetchall()
 

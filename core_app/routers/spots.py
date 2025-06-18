@@ -10,7 +10,6 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
 
 # импортируем логические объекты
-# from logics.base_logic import BaseLogic
 from logics.spots_logic import SpotLogic
 
 # импортируем глобальные переменные
@@ -26,27 +25,36 @@ router = APIRouter(prefix="/spots", tags=['Spots'])
 
 @router.get("/products")
 async def get_product_name(
-        frontend_id: int,
-        frontend_service_id: int,
         search_name: str,
+        limit: int = 3,
+        similarity_threshold: float = 0.1,
         token: Union[str, None] = Depends(get_token),
-        logic_obj: SpotLogic = Depends(SpotLogic)
+        logic_obj: SpotLogic = Depends(SpotLogic),
+        frontend_id: Optional[int] = None,
+        frontend_service_id: Optional[int] = None,
+        branch_id: Optional[int] = None
 ):
     """Роут для обработки запроса на поиск продукта по его имени в векторном хранилище
     Args:
         frontend_id: идентификатор клиента из frontend сервиса который обращается к API
         frontend_service_id: тип frontend сервиса который взаимодействует с системой
         search_name: имя по которому нужно найти товар
+        limit: кол-во записей который нужно извлечь
+        similarity_threshold: степень похожести
         token: токен авторизации которые передается в заголовке запроса
         logic_obj: логический объект в котором происходит обработки бизнес логики
+        branch_id: идентификатор помещения в котором необходимо найти товары
     """
     logger.info(f"Пришел запрос на определение данных товаров по имени: {search_name}. frontend_id: {frontend_id}, frontend_service_id: {frontend_service_id}")
     res = await logic_obj.use_get_product_data_by_name(
         token=token,
         api="spot/products",
         search_name=search_name,
+        limit=limit,
+        similarity_threshold=similarity_threshold,
         frontend_id=frontend_id,
-        frontend_service_id=frontend_service_id
+        frontend_service_id=frontend_service_id,
+        branch_id=branch_id
     )
     # проверяем не произошла ли ошибка
     if res.error:
@@ -57,12 +65,12 @@ async def get_product_name(
 
 @router.post("/")
 async def get_spots(
-        frontend_id: int,
-        frontend_service_id: int,
         items_ids: logic_schem.spot_schem.ItemsIDsSchem,
         route: bool = False,
         token: Union[str, None] = Depends(get_token),
         logic_obj: SpotLogic = Depends(SpotLogic),
+        frontend_id: Optional[int] = None,
+        frontend_service_id: Optional[int] = None,
         branch_id: Optional[int] = None
 ):
     logger.info(f"Пришел запрос схему расположения ячеек в магазине. frontend_id: {frontend_id}, "

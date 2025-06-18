@@ -17,6 +17,21 @@ class AuthenticationError(Exception):
         return f"Send not valid token -> {self.token}"
 
 
+class AccessError(Exception):
+    """Ошибка когда у пользователя нет доступа к запрашиваемому ресурсу"""
+    def __init__(self, api: str):
+        self.api = api
+        self.error = base_schemas.BaseErrorSchem(
+            name="AccessError",
+            details="no access to this resource",
+            api=api,
+            status_code=403
+        )
+
+    def __str__(self):
+        return f"AccessError api -> {self.api}"
+
+
 class NotFoundError(Exception):
     """Ошибка когда не удалось найти какие-то значения"""
     def __init__(self, item_name: str, api: str):
@@ -25,11 +40,26 @@ class NotFoundError(Exception):
             name="NotFoundError",
             details=f"not found item: <{item_name}>",
             api=api,
-            status_code=404
+            status_code=200
         )
 
     def __str__(self):
         return f"NotFoundError item_name -> {self.item_name}"
+
+
+class ValidationError(Exception):
+    """Ошибка когда не прошла первоначальная валидация"""
+    def __init__(self, detail: str, api: str):
+        self.detail = detail
+        self.error = base_schemas.BaseErrorSchem(
+            name="DownloadKeyError",
+            details=detail,
+            api=api,
+            status_code=200
+        )
+
+    def __str__(self):
+        return f"ValidationError -> {self.detail}"
 
 
 class DownloadKeyError(Exception):
@@ -40,7 +70,7 @@ class DownloadKeyError(Exception):
             name="DownloadKeyError",
             details=f"not valid download key: <{key}>",
             api=api,
-            status_code=404
+            status_code=200
         )
 
     def __str__(self):
@@ -54,7 +84,7 @@ class UpdateLocationError(Exception):
             name="UpdateLocationError",
             details=f"error to add location",
             api=api,
-            status_code=404
+            status_code=400
         )
 
     def __str__(self):
@@ -69,7 +99,7 @@ class AddError(Exception):
             name="AddError",
             details=f"error to add data: <{item}>",
             api=api,
-            status_code=404
+            status_code=400
         )
 
     def __str__(self):

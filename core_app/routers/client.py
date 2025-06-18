@@ -14,7 +14,7 @@ from logics.client_logic import ClientLogic
 
 # импортируем глобальные переменные
 from fastapi_core import get_token
-from schemas import logic_schem
+from schemas import logic_schem, storage_schem
 from schemas.base_schemas import BaseResultSchem
 
 
@@ -58,7 +58,7 @@ async def update_client_location(
         frontend_id: int,
         frontend_service_id: int,
         branch_id: int,
-        token: str,
+        token: Union[str, None] = Depends(get_token),
         logic_obj: ClientLogic = Depends(ClientLogic)
 ):
     """Обновляем данные локации клиента"""
@@ -79,7 +79,7 @@ async def update_client_location(
 async def get_countries(
         frontend_id: int,
         frontend_service_id: int,
-        token: str,
+        token: Union[str, None] = Depends(get_token),
         logic_obj: ClientLogic = Depends(ClientLogic)
 ):
     """Извлечение списка стран относящихся к определенной организации"""
@@ -100,7 +100,7 @@ async def get_districts(
         frontend_service_id: int,
         search_name: str,
         country_id: int,
-        token: str,
+        token: Union[str, None] = Depends(get_token),
         limit: int = 3,
         similarity_threshold: float = 0.1,
         logic_obj: ClientLogic = Depends(ClientLogic)
@@ -127,7 +127,7 @@ async def get_cities(
         frontend_service_id: int,
         search_name: str,
         district_id: int,
-        token: str,
+        token: Union[str, None] = Depends(get_token),
         limit: int = 3,
         similarity_threshold: float = 0.1,
         logic_obj: ClientLogic = Depends(ClientLogic)
@@ -154,7 +154,7 @@ async def get_cities(
         frontend_service_id: int,
         search_address: str,
         city_id: int,
-        token: str,
+        token: Union[str, None] = Depends(get_token),
         limit: int = 3,
         similarity_threshold: float = 0.1,
         logic_obj: ClientLogic = Depends(ClientLogic)
@@ -175,11 +175,11 @@ async def get_cities(
     else:
         return JSONResponse(status_code=200, content=res.model_dump())
 
-@router.get("/")
+@router.get("/", response_model=BaseResultSchem[storage_schem.clients_schem.ClientWithLocationSchem])
 async def get_client_data(
         frontend_id: int,
         frontend_service_id: int,
-        token: str,
+        token: Union[str, None] = Depends(get_token),
         logic_obj: ClientLogic = Depends(ClientLogic)
 ):
     """Извлечение данных клиента"""
@@ -194,10 +194,10 @@ async def get_client_data(
     else:
         return JSONResponse(status_code=200, content=res.model_dump())
 
-@router.post("/")
+@router.post("/", response_model=BaseResultSchem[storage_schem.clients_schem.ClientWithLocationSchem])
 async def add_new_client_data(
-data: logic_schem.spot_schem.AddClientSchem,
-        token: str,
+        data: logic_schem.spot_schem.AddClientSchem,
+        token: Union[str, None] = Depends(get_token),
         logic_obj: ClientLogic = Depends(ClientLogic)
 ):
     """Добавление нового клиента"""

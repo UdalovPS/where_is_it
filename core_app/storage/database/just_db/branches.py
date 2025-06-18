@@ -1,8 +1,6 @@
 """storage/database/just_db/branches"""
 from typing import Optional, List
 
-from watchfiles import awatch
-
 from schemas import storage_schem
 from storage.base_interfaces import database
 from ..db import db_choicer
@@ -58,3 +56,10 @@ class BranchesJustDb(database.BaseBranches):
             limit=limit,
             similarity_threshold=similarity_threshold
         )
+
+    async def get_branch_data_by_id(self, node_id: int) -> Optional[storage_schem.branches_schem.BranchSchema]:
+        """Извлекаем данные филиала по его ID
+        Args:
+            node_id: идентификатор записи
+        """
+        return await self.db.get_branch_data_by_id(node_id=node_id)

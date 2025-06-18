@@ -27,11 +27,15 @@ class SpotLogic(BaseLogic):
 
     async def use_get_product_data_by_name(
             self,
-            frontend_id: int,
-            frontend_service_id: int,
             search_name: str,
             token: str,
             api: str,
+            limit: int = 3,
+            similarity_threshold: float = 0.1,
+            frontend_id: Optional[int] = None,
+            frontend_service_id: Optional[int] = None,
+            branch_id: Optional[int] = None
+
     ) -> BaseResultSchem[List[schemas.storage_schem.items_schem.SimilarItemsSchem]]:
         """НАВИГАЦИОННЫЙ МЕТОД поиска данных по товару по его имени.
         - Проходим аутентификацию по токену
@@ -43,6 +47,9 @@ class SpotLogic(BaseLogic):
             search_name: наименование товара который нужно найти
             token: токен аутентификации
             api: раздел в котором происходит действие
+            limit: кол-во записей который нужно извлечь
+            similarity_threshold: степень похожести
+            branch_id: идентификатор помещения в котором необходимо найти товары
         return:
             BaseResultSchem(
                 error: Optional[BaseErrorSchem] - данные об ошибке, если она произошла
@@ -56,17 +63,25 @@ class SpotLogic(BaseLogic):
             # аутентификация
             await self.check_authenticate(token=token, api=api)
 
-            # поиск данных филиала
-            branch_id = await self.get_branch_id_by_client_data(
-               frontend_id=frontend_id,
-               frontend_service_id=frontend_service_id,
-                api=api
-            )
+            # валидация данных
+            if not branch_id and (not frontend_id or not frontend_service_id):
+                raise exceptions.ValidationError(api=api, detail="branch_id and frontend_data cannot be empty")
+
+            if not branch_id:
+                # поиск данных филиала
+                branch_id = await self.get_branch_id_by_client_data(
+                    frontend_id=frontend_id,
+                    frontend_service_id=frontend_service_id,
+                    api=api
+                )
 
             # проверяем есть ли в помещении в котором находится пользователь данные товары
             items_data = await self.items_obj.get_similar_items(
                 branch_id=branch_id,
                 search_name=search_name,
+                count=limit,
+                sim_threshold=similarity_threshold,
+                organization_id=self.ORGANIZATION_ID
             )
             if not items_data:
                 # ошибка если по данному имени не найден товар
@@ -78,12 +93,12 @@ class SpotLogic(BaseLogic):
 
     async def get_spots_schem(
             self,
-            frontend_id: int,
-            frontend_service_id: int,
             items_ids: List[int],
             token: str,
             api: str,
             branch_id: Optional[int] = None,
+            frontend_id: Optional[int] = None,
+            frontend_service_id: Optional[int] = None,
             route: bool = False
     ):
         """НАВИГАЦИОННЫЙ МЕТОД
@@ -114,6 +129,10 @@ class SpotLogic(BaseLogic):
 
             # аутентификация
             await self.check_authenticate(token=token, api=api)
+
+            # валидация данных
+            if not branch_id and (not frontend_id or not frontend_service_id):
+                raise exceptions.ValidationError(api=api, detail="branch_id and frontend_data cannot be empty")
 
             # поиск данных филиала
             if not branch_id:
@@ -160,7 +179,6 @@ class SpotLogic(BaseLogic):
                 download_url=f"{config.API_URL}/api/spots/download/{key}"
             )
 
-            print(f"key: {key}")
             await self.cache_obj.set_data_in_cache(key=key, value=result, live_time=60)
 
             return BaseResultSchem[logic_schem.spot_schem.SpotResultSchem](data=result)
@@ -198,9 +216,14 @@ class SpotLogic(BaseLogic):
                 raise exceptions.NotFoundError(item_name="branch_schem_data", api=api)
 
             # # отмечаем расположение ячеек на изображении
+            item_id = 0
+            count = 0
             painter = Painter(image_path=branch_schem_data.content.url)
-            for index, spot in enumerate(data.spots_data):
-                painter.add_point(x=spot.x_spot_coord, y=spot.y_spot_coord, label=str(index + 1))
+            for spot in data.spots_data:
+                if spot.item_data.id != item_id:
+                    item_id = spot.item_data.id
+                    count += 1
+                painter.add_point(x=spot.x_spot_coord, y=spot.y_spot_coord, label=str(count))
 
             painter.save_image("./out.jpg")
 
@@ -291,7 +314,7 @@ class SpotLogic(BaseLogic):
         """
         # получаем данные клиента
         client_data = await self.client_obj.get_data_by_frontend_id(
-            frontend_id=frontend_id, frontend_service_id=frontend_service_id
+            frontend_id=frontend_id, frontend_service_id=frontend_service_id, organization_id=self.ORGANIZATION_ID
         )
         logger.info(f"Получены данные клиента: {client_data}")
         if not client_data:
