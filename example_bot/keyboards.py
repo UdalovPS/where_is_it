@@ -7,6 +7,9 @@ from aiogram.filters.callback_data import CallbackData
 import schemas
 
 
+logger = logging.getLogger(__name__)
+
+
 class BranchCallback(CallbackData, prefix="branch"):
     action: str  # Обязательно указываем типы полей
     id: int
@@ -15,7 +18,6 @@ class BranchCallback(CallbackData, prefix="branch"):
 class LocationCallback(CallbackData, prefix="location"):
     action: str  # Обязательно указываем типы полей
     id: int
-    name: Optional[str] = None
 
 
 class ItemCallback(CallbackData, prefix="item"):
@@ -23,44 +25,63 @@ class ItemCallback(CallbackData, prefix="item"):
     id: int
 
 
-logger = logging.getLogger(__name__)
+class Emoji:
+    back = "🔙"  # стрелка назад
+    lupa = "🔍"  # лупа
+    cart = "🛒"  # тележка для покупок
+    store = "🏪"
+    geo = "📍"
+    hand = "🖐"
+    cancel = "\U0000274C"
+    ok = "\U00002705"
+    pencil = "\U0000270F"
+    warn = "\U000026A0"
+    plus = "\U00002795"
+    clock = "\U000023F3"
+    blue = "\U0001F535"
+    finger_right = "\U0001F449"
+
 
 def create_main_menu_board():
     """Создание кнопки для главного меню"""
     builder = InlineKeyboardBuilder()
     builder.button(
-        text="Найти товар на полках",
+        text=f"{Emoji.lupa} Найти один товар",
         callback_data="find_one"
     )
     builder.button(
-        text="Найти список товаров",
+        text=f"{Emoji.cart} Найти список товаров",
         callback_data="find_many"
     )
     builder.button(
-        text="Выбрать магазин",
+        text=f"{Emoji.store} Выбрать магазин",
         callback_data="choice_branch"
     )
     builder.adjust(1)  # Расположить кнопки в 1 колонку
     return builder.as_markup()
 
 def create_init_geo_menu_board():
-    """Создание кнопки для главного меню"""
+    """Создание кнопок создания меню выбора геолокации"""
     builder = InlineKeyboardBuilder()
     builder.button(
-        text="По геолокации",
+        text=f"{Emoji.geo} По геолокации",
         callback_data="location_geo",
         request_location=True
     )
     builder.button(
-        text="Выбрать вручную",
+        text=f"{Emoji.hand} Выбрать вручную",
         callback_data="location_hand"
+    )
+    builder.button(
+        text=f"{Emoji.back} Назад",
+        callback_data="main_menu"
     )
     builder.adjust(1)  # Расположить кнопки в 1 колонку
     return builder.as_markup(resize_keyboard=True, one_time_keyboard=True)
 
 def create_send_geolocation_menu():
     builder = ReplyKeyboardBuilder()
-    builder.button(text="Отправить геолокацию", request_location=True)
+    builder.button(text=f"{Emoji.geo} Отправить геолокацию", request_location=True)
     return builder.as_markup(resize_keyboard=True, one_time_keyboard=True)
 
 def create_choice_branches_by_geo_menu(data: List[schemas.BranchSchema]):
@@ -71,6 +92,10 @@ def create_choice_branches_by_geo_menu(data: List[schemas.BranchSchema]):
             text=f"{branch.city_data.name}. {branch.address}",
             callback_data=BranchCallback(action="update_branch", id=branch.id).pack()
         )
+    builder.button(
+        text=f"{Emoji.cancel} Отмена",
+        callback_data=BranchCallback(action="update_branch",id=0).pack()
+    )
     builder.adjust(1)
     return builder.as_markup()
 
@@ -83,11 +108,10 @@ def create_choice_countries_menu(data: List[schemas.CountrySchem]):
             callback_data=LocationCallback(
                 action="choice_country",
                 id=country.id,
-                name=country.name
             ).pack()
         )
     builder.button(
-        text="Отмена",
+        text=f"{Emoji.back} Назад",
         callback_data=LocationCallback(
             action="choice_country",
             id=0,
@@ -105,14 +129,20 @@ def create_choice_district_menu(data: List[schemas.DistrictSchem]):
             callback_data=LocationCallback(
                 action="choice_district",
                 id=district.id,
-                name=district.name
             ).pack()
         )
     builder.button(
-        text="Отмена",
+        text=f"{Emoji.pencil} Ввести заново",
         callback_data=LocationCallback(
             action="choice_district",
             id=0,
+        ).pack()
+    )
+    builder.button(
+        text=f"{Emoji.back} К выбору страны",
+        callback_data=LocationCallback(
+            action="choice_district",
+            id=-1,
         ).pack()
     )
     builder.adjust(1)
@@ -127,16 +157,23 @@ def create_choice_city_menu(data: List[schemas.CitySchem]):
             callback_data=LocationCallback(
                 action="choice_city",
                 id=city.id,
-                name=city.name
             ).pack()
         )
     builder.button(
-        text="Отмена",
+        text=f"{Emoji.pencil} Ввести заново",
         callback_data=LocationCallback(
             action="choice_city",
             id=0,
         ).pack()
     )
+    builder.button(
+        text=f"{Emoji.back} К выбору региона",
+        callback_data=LocationCallback(
+            action="choice_city",
+            id=-1,
+        ).pack()
+    )
+
     builder.adjust(1)
     return builder.as_markup()
 
@@ -149,14 +186,20 @@ def create_choice_branches_menu(data: List[schemas.BranchSchema]):
             callback_data=LocationCallback(
                 action="choice_branch",
                 id=branch.id,
-                name=branch.address
             ).pack()
         )
     builder.button(
-        text="Отмена",
+        text=f"{Emoji.pencil} Ввести заново",
         callback_data=LocationCallback(
             action="choice_branch",
-            id=0,
+            id=-1,
+        ).pack()
+    )
+    builder.button(
+        text=f"{Emoji.back} К выбору города",
+        callback_data=LocationCallback(
+            action="choice_branch",
+            id=-2,
         ).pack()
     )
     builder.adjust(1)
@@ -190,18 +233,18 @@ def create_many_items_choice():
     """
     builder = InlineKeyboardBuilder()
     builder.button(
-        text="Добавить еще",
+        text=f"{Emoji.plus} Добавить еще",
         callback_data="find_many"
     )
     builder.button(
-        text="Найти товары",
+        text=f"{Emoji.lupa} Найти товары",
         callback_data=ItemCallback(
             action="many_choice",
             id=2,
         ).pack()
     )
     builder.button(
-        text="Отмена",
+        text=f"{Emoji.cancel} Отмена",
         callback_data=ItemCallback(
             action="many_choice",
             id=0,

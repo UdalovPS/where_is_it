@@ -51,8 +51,12 @@ class ClientLogic:
         """Создаем данные для главного меню"""
         user_data = await self.get_user_data()
         if user_data:
-            keyboard = keyboards.create_main_menu_board()
-            return "Меню", keyboard
+            if not user_data.location:
+                keyboard = keyboards.create_init_geo_menu_board()
+                return "Меню выбора магазина/склада", keyboard
+            else:
+                keyboard = keyboards.create_main_menu_board()
+                return "Главное меню", keyboard
         else:
             return None, None
 
@@ -64,13 +68,13 @@ class ClientGeolocation(ClientLogic):
     async def get_init_geo_menu() -> Tuple[Optional[str], Optional[InlineKeyboardMarkup]]:
         """Создаем начальное меню выбора локации"""
         keyboard = keyboards.create_init_geo_menu_board()
-        return "Меню", keyboard
+        return "Главное меню", keyboard
 
     @staticmethod
     async def get_send_geo_menu() -> Tuple[Optional[str], Optional[InlineKeyboardMarkup]]:
         """Создаем кнопку отправки геолокации"""
         keyboard = keyboards.create_send_geolocation_menu()
-        return "Нажмите на кнопку чтобы отправить геолокацию", keyboard
+        return "Нажмите на кнопку снизу чтобы отправить геолокацию \U0001F447", keyboard
 
     async def get_branches_by_geo(
             self,
@@ -89,9 +93,9 @@ class ClientGeolocation(ClientLogic):
         )
         if branches.data:
             keyboard = keyboards.create_choice_branches_by_geo_menu(data=branches.data)
-            return "Выберите магазин", keyboard
+            return "Выберите магазин/склад", keyboard
         else:
-            return None, None
+            return "Не удалось найти магазины/склад по геолокации", None
 
     async def update_client_location(
             self,
@@ -103,12 +107,31 @@ class ClientGeolocation(ClientLogic):
             branch_id: идентификатор филиала, за которым требуется закрепить клиента
             state: объект в котором хранится состояние диалога пользователя
         """
+        if state:
+            data = await state.get_data()
+            if branch_id == -1:
+                # ко вводу адреса заново
+                return await self.send_branch_address_menu(
+                    city_id=data["city_id"], city_name=data["city_name"], state=state
+                )
+            if branch_id == -2:
+                # к вводу города заново
+                await state.set_state(states.LocationHand.choice_city)
+                return await self.send_city_name_menu(
+                    district_id=data["district_id"], district_name=data["district_name"], state=state
+                )
+
+        if branch_id == 0:
+            # отмена при изменении по геолокации
+            keyboard = keyboards.create_main_menu_board()
+            return "Главное меню", keyboard
+
         update = await self.web_app.update_client_location(branch_id=branch_id, user_id=self.user_id)
         if state:
             await state.clear()
 
         if update.data:
-            return "Локация изменена", None
+            return f"{keyboards.Emoji.ok} Локация изменена", None
         else:
             return "Ошибка при изменении локации", None
 
@@ -119,7 +142,8 @@ class ClientGeolocation(ClientLogic):
             keyboard = keyboards.create_choice_countries_menu(data=countries.data)
             return "Выберите страну", keyboard
         else:
-            return None, None
+            keyboard = keyboards.create_init_geo_menu_board()
+            return f"{keyboards.Emoji.warn} Не удалось получить список стран. Попробуйте заново", keyboard
 
     async def send_district_name_menu(
             self,
@@ -135,12 +159,14 @@ class ClientGeolocation(ClientLogic):
             state: объект стадии диалога, в котором хранится на каком этапе идет диалог
         """
         if country_id == 0:
-            return None, None
+            # переходим в главное меню
+            keyboard = keyboards.create_main_menu_board()
+            return "Главное меню", keyboard
         else:
             # устанавливаем состояние
             await state.set_state(states.LocationHand.choice_district)
             await state.update_data(country_id=country_id, country_name=country_name)
-            return f"{country_name}\nВведите название региона (вводить полностью не обязательно)", None
+            return f"Страна: <b>{country_name}</b>\nВведите название региона (вводить полностью не обязательно)", None
 
     async def get_districts_by_name(
             self,
@@ -159,11 +185,10 @@ class ClientGeolocation(ClientLogic):
             country_id=data["country_id"], search_name=search_name, user_id=self.user_id
         )
         if not districts.data:
-            await state.clear()
-            return None, None
+            return f"{keyboards.Emoji.warn} Не удалось найти регион <b>{search_name}</b>. Попробуйте заново", None
         else:
             keyboard = keyboards.create_choice_district_menu(data=districts.data)
-            return f'{data["country_name"]}\nВыберите регион', keyboard
+            return f'Страна: <b>{data["country_name"]}</b>\nВыберите регион', keyboard
 
     async def send_city_name_menu(
             self,
@@ -177,14 +202,21 @@ class ClientGeolocation(ClientLogic):
             district_name: наименование региона
             state: объект стадии диалога, в котором хранится на каком этапе идет диалог
         """
+        data = await state.get_data()
         if district_id == 0:
-            return None, None
+            # переход к тому, чтобы ввести наименование региона заного
+            return await self.send_district_name_menu(
+                country_id=data["country_id"], country_name=data["country_name"], state=state
+            )
+        if district_id == -1:
+            # переход ко вводу страны
+            await state.clear()
+            return await self.choice_country_menu()
         else:
             # устанавливаем состояние
             await state.set_state(states.LocationHand.choice_city)
             await state.update_data(district_id=district_id, district_name=district_name)
-            data = await state.get_data()
-            return f"{data["country_name"]}. {district_name}\nВведите название города (вводить полностью не обязательно)", None
+            return f"Страна: <b>{data["country_name"]}</b>\nРегион: <b>{district_name}</b>\nВведите название города (вводить полностью не обязательно)", None
 
     async def get_city_by_name(
             self,
@@ -203,11 +235,10 @@ class ClientGeolocation(ClientLogic):
             district_id=data["district_id"], search_name=search_name, user_id=self.user_id
         )
         if not cities.data:
-            await state.clear()
-            return None, None
+            return f"{keyboards.Emoji.warn} Не удалось найти город <b>{search_name}</b>. Попробуйте заново", None
         else:
             keyboard = keyboards.create_choice_city_menu(data=cities.data)
-            return f'{data["country_name"]}.{data["district_name"]}\nВыберите город', keyboard
+            return f'Страна: <b>{data["country_name"]}</b>\nРегион: <b>{data["district_name"]}</b>\nВыберите город', keyboard
 
     async def send_branch_address_menu(
             self,
@@ -221,14 +252,23 @@ class ClientGeolocation(ClientLogic):
             city_name: наименование города
             state: объект стадии диалога, в котором хранится на каком этапе идет диалог
         """
+        data = await state.get_data()
         if city_id == 0:
-            return None, None
+            # переход к тому, чтобы ввести наименование города заново
+            return await self.send_city_name_menu(
+                district_id=data["district_id"], district_name=data["district_name"], state=state
+            )
+        if city_id == -1:
+            # переход ко вводу региона
+            await state.set_state(states.LocationHand.choice_district)
+            return await self.send_district_name_menu(
+                country_id=data["country_id"], country_name=data["country_name"], state=state
+            )
         else:
             # устанавливаем состояние
             await state.set_state(states.LocationHand.choice_branch)
             await state.update_data(city_id=city_id, city_name=city_name)
-            data = await state.get_data()
-            return f"{data["country_name"]}. {data["district_name"]}. {city_name}\nВведите адрес магазина (вводить полностью не обязательно)", None
+            return f"Страна: <b>{data["country_name"]}</b>\nРегион: <b>{data["district_name"]}</b>\nГород: <b>{city_name}</b>\nВведите адрес магазина (вводить полностью не обязательно)", None
 
     async def get_branches_by_address(
             self,
@@ -247,11 +287,10 @@ class ClientGeolocation(ClientLogic):
             city_id=data["city_id"], search_name=search_name, user_id=self.user_id, limit=2
         )
         if not branches.data:
-            await state.clear()
-            return None, None
+            return f"{keyboards.Emoji.warn} Не удалось найти адрес <b>{search_name}</b>. Попробуйте заново", None
         else:
             keyboard = keyboards.create_choice_branches_menu(data=branches.data)
-            return f'{data["country_name"]}. {data["district_name"]}. {data["city_name"]}\nВыберите адрес', keyboard
+            return f'Страна: <b>{data["country_name"]}</b>\nРегион: <b>{data["district_name"]}</b>\nГород: <b>{data["city_name"]}</b>\nВыберите адрес', keyboard
 
 
 class ClientItems(ClientLogic):
@@ -280,8 +319,7 @@ class ClientItems(ClientLogic):
             keyboard = keyboards.create_choice_items_meny(data=items.data, many=many)
             return "Выберите товар", keyboard
         else:
-            await state.clear()
-            return "Не удалось найти товары с похожим наименованием", None
+            return f"Не удалось найти товары с похожим наименованием <b>{search_name}</b>. Введите другое наименование", None
 
     async def get_scheme(
             self,
