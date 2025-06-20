@@ -127,12 +127,15 @@ class WebCore:
         )
         return schemas.BaseResultSchem[schemas.ClientSchem].model_validate(response)
 
-    async def get_location_by_geo(
+    async def get_branches(
             self,
-            latitude: float,
-            longitude: float,
             user_id: int,
-            limit: int = 3
+            limit: int = 3,
+            latitude: Optional[float] = None,
+            longitude: Optional[float] = None,
+            city_id: Optional[int] = None,
+            search_name: Optional[str] = None,
+            similarity_threshold: float = 0.1
     ) -> schemas.BaseResultSchem[List[schemas.BranchSchema]]:
         """Извлекаем данные филиалов наиболее близких к текущей геолокации
         Args:
@@ -140,20 +143,27 @@ class WebCore:
             longitude: долгота
             user_id: идентификатор пользователя
             limit: кол-во записей которые нужно вернуть
+            similarity_threshold: степень похожести
+            city_id: идентификатор города
+            search_name: имя поиска
         """
-        logger.info(f"Запрашиваю список филиалов для user: {user_id} по геолокации: {latitude}:{longitude}")
+        logger.info(f"Запрашиваю список филиалов для user: {user_id} геолокация: {latitude}:{longitude}, city_id: {city_id}, search_name: {search_name}, similarity_threshold: {similarity_threshold}")
         response = await self.base_request(
             method="GET",
-            sub_url="client/branches/geo",
+            sub_url="client/branches",
             params={
                 "frontend_service_id": FRONTEND_SERVICE_ID,
                 "frontend_id": user_id,
-                "latitude": latitude,
-                "longitude": longitude,
-                "limit": limit
+                "limit": limit,
+                "similarity_threshold": similarity_threshold,
+                **({"latitude": latitude} if latitude is not None else {}),
+                **({"longitude": longitude} if longitude is not None else {}),
+                **({"city_id": city_id} if city_id is not None else {}),
+                **({"search_address": search_name} if search_name is not None else {}),
             }
         )
         return schemas.BaseResultSchem[List[schemas.BranchSchema]].model_validate(response)
+
 
     async def update_client_location(
             self,
@@ -252,37 +262,6 @@ class WebCore:
         )
         return schemas.BaseResultSchem[List[schemas.CitySchem]].model_validate(response)
 
-    async def get_branches_by_address(
-            self,
-            city_id: int,
-            search_name: str,
-            user_id: int,
-            limit: int = 3,
-            similarity_threshold: float = 0.1
-    ) -> schemas.BaseResultSchem[List[schemas.BranchSchema]]:
-        """Извлечения регионов по стране и наименованию
-        Args:
-            city_id: идентификатор города
-            search_name: наименование региона, который необходимо найти
-            user_id: идентификатор пользователя из telegram
-            limit: кол-во возвращаемых записей
-            similarity_threshold: доля похожести введенного значения
-        """
-        logger.info(f"Запрашиваю список адресов: {city_id} -{search_name}")
-        response = await self.base_request(
-            method="GET",
-            sub_url="client/branches",
-            params={
-                "frontend_service_id": FRONTEND_SERVICE_ID,
-                "frontend_id": user_id,
-                "search_address": search_name,
-                "city_id": city_id,
-                "limit": limit,
-                "similarity_threshold": similarity_threshold,
-            }
-        )
-        return schemas.BaseResultSchem[List[schemas.BranchSchema]].model_validate(response)
-
     async def get_items_by_name(
             self,
             search_name: str,
@@ -300,7 +279,7 @@ class WebCore:
         logger.info(f"Запрашиваю список товаров похожих по имени: {search_name}")
         response = await self.base_request(
             method="GET",
-            sub_url="spots/products",
+            sub_url="client/items",
             params={
                 "frontend_service_id": FRONTEND_SERVICE_ID,
                 "frontend_id": user_id,
@@ -324,7 +303,7 @@ class WebCore:
         logger.info(f"Запрашиваю схему товаров по списку: {items_ids}, {user_id}")
         response = await self.base_request(
             method="POST",
-            sub_url="spots",
+            sub_url="client/spots",
             params={
                 "frontend_service_id": FRONTEND_SERVICE_ID,
                 "frontend_id": user_id,

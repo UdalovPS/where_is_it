@@ -211,7 +211,7 @@ def create_choice_items_meny(data: Optional[List[schemas.SimilarItemsSchem]] = N
     if data:
         for item in data:
             builder.button(
-                text=f"{item.category} {item.name}",
+                text=f"{item.category} [{item.name}]",
                 callback_data=ItemCallback(
                     action="one_item" if not many else "many_item",
                     id=item.id,

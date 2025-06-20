@@ -88,7 +88,7 @@ class ClientGeolocation(ClientLogic):
             longitude: долгота
             limit: кол-во записей которые нужно вернуть из запроса
         """
-        branches = await self.web_app.get_location_by_geo(
+        branches = await self.web_app.get_branches(
             latitude=latitude, longitude=longitude, user_id=self.user_id, limit=limit
         )
         if branches.data:
@@ -283,8 +283,8 @@ class ClientGeolocation(ClientLogic):
         """
         # извлекаем данные из state
         data = await state.get_data()
-        branches = await self.web_app.get_branches_by_address(
-            city_id=data["city_id"], search_name=search_name, user_id=self.user_id, limit=2
+        branches = await self.web_app.get_branches(
+            city_id=data["city_id"], search_name=search_name, user_id=self.user_id, limit=10
         )
         if not branches.data:
             return f"{keyboards.Emoji.warn} Не удалось найти адрес <b>{search_name}</b>. Попробуйте заново", None
