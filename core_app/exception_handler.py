@@ -17,8 +17,22 @@ def handle_view_exception(ex: Exception, api: str) -> BaseResultSchem:
         ex: возникшая ошибка
         api: раздел API в котором возникала ошибка
     """
+    if isinstance(ex, exceptions.AccessError):
+        logger.error(f"Возникла ошибка допуска. API: {api} ")
 
-    if isinstance(ex, exceptions.AuthenticationError):
+    elif isinstance(ex, exceptions.ValidationError):
+        logger.error(f"Ошибка валидации данных. detail: {ex.detail}, API: {api}")
+
+    elif isinstance(ex, exceptions.DownloadKeyError):
+        logger.error(f"Ошибка загрузки схемы")
+
+    elif isinstance(ex, exceptions.UpdateLocationError):
+        logger.error(f"Ошибка при обновлении локации клиента")
+
+    elif isinstance(ex, exceptions.AddError):
+        logger.error(f"Ошибка при добавлении данных, API: {api}")
+
+    elif isinstance(ex, exceptions.AuthenticationError):
         logger.error(f"Возникла ошибка аутентификации. token: {ex.token} API: {api}")
 
     elif isinstance(ex, exceptions.NotFoundError):

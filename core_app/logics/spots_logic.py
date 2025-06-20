@@ -176,7 +176,7 @@ class SpotLogic(BaseLogic):
 
             result = logic_schem.spot_schem.SpotResultSchem(
                 spots_data=spots_data,
-                download_url=f"{config.API_URL}/api/spots/download/{key}"
+                download_url=f"{config.API_URL}/api/client/download/{key}"
             )
 
             await self.cache_obj.set_data_in_cache(key=key, value=result, live_time=60)
@@ -225,7 +225,7 @@ class SpotLogic(BaseLogic):
                     count += 1
                 painter.add_point(x=spot.x_spot_coord, y=spot.y_spot_coord, label=str(count))
 
-            painter.save_image("./out.jpg")
+            # painter.save_image("./out.jpg")
 
             return painter.image
         except Exception as _er:

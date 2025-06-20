@@ -5,6 +5,9 @@
 import logging
 from typing import List, Optional, Dict
 
+from sqlalchemy.util import await_only
+from watchfiles import awatch
+
 # импортируем логические объекты
 from logics.base_logic import BaseLogic
 
@@ -21,13 +24,75 @@ logger = logging.getLogger(__name__)
 class ClientLogic(BaseLogic):
     """Объект с методами для нахождения местоположения товаров на полках"""
 
+    async def get_branch_data(
+            self,
+            frontend_id: int,
+            frontend_service_id: int,
+            token: str,
+            api: str,
+            latitude: Optional[float] = None,
+            longitude: Optional[float] = None,
+            search_address: Optional[str] = None,
+            city_id: Optional[int] = None,
+            limit: int = 3,
+            similarity_threshold: float = 0.1,
+    ) -> BaseResultSchem[List[storage_schem.branches_schem.BranchSchema]]:
+        """Извлечение данных помещения
+        Args:
+            frontend_id: идентификатор клиента из frontend сервиса который обращается к API
+            frontend_service_id: тип frontend сервиса который взаимодействует с системой
+            latitude: широта геолокации поиска пользователя
+            longitude: долгота геолокации поиска пользователя
+            token: токен аутентификации
+            api: раздел в котором происходит действие
+            limit: максимальное кол-во извлеченных записей
+            search_address: адрес поиска
+            city_id: идентификатор города
+            similarity_threshold: степень похожести
+        """
+        try:
+            logger.info(f"Обрабатываю логику извлечения помещений."
+                        f"frontend_id: {frontend_id}, frontend_service_id: {frontend_service_id}, "
+                        f"latitude: {latitude}, longitude: {longitude}, "
+                        f"token: {token}, api: {api}, limit: {limit}, search_address: {search_address}, "
+                        f"city_id: {city_id}, similarity_threshold: {similarity_threshold}")
+            # первичная валидация
+            if not (latitude and longitude) and not (search_address and city_id):
+                raise exceptions.ValidationError(
+                    detail="<latitude> and <longitude> or <search_address> and <city_id> can't be empty",
+                    api=api
+                )
+            # аутентификация
+            await self.check_authenticate(token=token, api=api)
+            if latitude and longitude:
+                return await self.get_branches_by_geo(
+                    frontend_id=frontend_id,
+                    frontend_service_id=frontend_service_id,
+                    latitude=latitude,
+                    longitude=longitude,
+                    api=api,
+                    limit=limit
+                )
+            else:
+                return await self.get_branches_by_name(
+                    frontend_id=frontend_id,
+                    frontend_service_id=frontend_service_id,
+                    search_address=search_address,
+                    city_id=city_id,
+                    limit=limit,
+                    similarity_threshold=similarity_threshold,
+                    api=api
+                )
+
+        except Exception as _er:
+            return handle_view_exception(ex=_er, api=api)
+
     async def get_branches_by_geo(
             self,
             frontend_id: int,
             frontend_service_id: int,
             latitude: float,
             longitude: float,
-            token: str,
             api: str,
             limit: int = 3
     ) -> BaseResultSchem[List[storage_schem.branches_schem.BranchSchema]]:
@@ -37,32 +102,30 @@ class ClientLogic(BaseLogic):
             frontend_service_id: тип frontend сервиса который взаимодействует с системой
             latitude: широта геолокации поиска пользователя
             longitude: долгота геолокации поиска пользователя
-            token: токен аутентификации
             api: раздел в котором происходит действие
             limit: максимальное кол-во извлеченных записей
         """
-        try:
-            logger.info(f"Обрабатываю логику поиска ближайших филиалов по геолокации. "
-                        f"frontend_id: {frontend_id}, frontend_service_id: {frontend_service_id}, "
-                        f"latitude: {latitude}, longitude: {longitude}, limit: {limit}")
-
-            # аутентификация
-            await self.check_authenticate(token=token, api=api)
-
-            # поиск ближайших точек
-            branches = await self.branches_obj.get_data_by_geo(
-                organization_id=self.ORGANIZATION_ID,
-                latitude=latitude,
-                longitude=longitude,
-                limit=limit
+        logger.info(f"Обрабатываю логику поиска ближайших филиалов по геолокации. "
+                    f"frontend_id: {frontend_id}, frontend_service_id: {frontend_service_id}, "
+                    f"latitude: {latitude}, longitude: {longitude}, limit: {limit}")
+        if not latitude or not longitude:
+            raise exceptions.ValidationError(
+                api=api,
+                detail="<latitude> or <longitude> can't be empty"
             )
-            if not branches:
-                # ошибка если по данному имени не найден товар
-                raise exceptions.NotFoundError(item_name="branches_data", api=api)
 
-            return BaseResultSchem[List[storage_schem.branches_schem.BranchSchema]](data=branches)
-        except Exception as _er:
-            return handle_view_exception(ex=_er, api=api)
+        # поиск ближайших точек
+        branches = await self.branches_obj.get_data_by_geo(
+            organization_id=self.ORGANIZATION_ID,
+            latitude=latitude,
+            longitude=longitude,
+            limit=limit
+        )
+        if not branches:
+            # ошибка если по данному имени не найден товар
+            raise exceptions.NotFoundError(item_name="branches_data", api=api)
+
+        return BaseResultSchem[List[storage_schem.branches_schem.BranchSchema]](data=branches)
 
     async def update_client_location(
             self,
@@ -155,7 +218,7 @@ class ClientLogic(BaseLogic):
             similarity_threshold: float,
             token: str,
             api: str,
-    ):
+    ) -> BaseResultSchem[List[storage_schem.districts_schem.DistrictSchem]]:
         """Извлечение списка стран определенной организации
         Args:
             frontend_id: идентификатор клиента из frontend сервиса который обращается к API
@@ -197,7 +260,7 @@ class ClientLogic(BaseLogic):
             similarity_threshold: float,
             token: str,
             api: str,
-    ):
+    ) -> BaseResultSchem[List[storage_schem.cities_schem.CitySchem]]:
         """Извлечение списка городов
         Args:
             frontend_id: идентификатор клиента из frontend сервиса который обращается к API
@@ -237,7 +300,6 @@ class ClientLogic(BaseLogic):
             city_id: int,
             limit: int,
             similarity_threshold: float,
-            token: str,
             api: str,
     ):
         """Извлечение списка адресов
@@ -248,28 +310,30 @@ class ClientLogic(BaseLogic):
             city_id: идентификатор города
             limit: кол-во записей которые нужно извлечь
             similarity_threshold: процент похожести
-            token: токен аутентификации
             api: раздел в котором происходит действие
         """
-        try:
-            logger.info(f"Обрабатываю логику извлечения адресов frontend_id: "
-                        f"{frontend_id}, frontend_service_id: {frontend_service_id}, "
-                        f"search_address: {search_address}, city_id: {city_id}, "
-                        f"limit: {limit}, similarity_threshold: {similarity_threshold}")
-            # аутентификация
-            await self.check_authenticate(token=token, api=api)
-            branches = await self.branches_obj.get_similar_by_org_city_and_address(
-                organization_id=self.ORGANIZATION_ID,
-                search_address=search_address,
-                city_id=city_id,
-                limit=limit,
-                similarity_threshold=similarity_threshold
+        logger.info(f"Обрабатываю логику извлечения адресов frontend_id: "
+                    f"{frontend_id}, frontend_service_id: {frontend_service_id}, "
+                    f"search_address: {search_address}, city_id: {city_id}, "
+                    f"limit: {limit}, similarity_threshold: {similarity_threshold}")
+        # валидация
+        if not search_address or not city_id:
+            raise exceptions.ValidationError(
+                api=api,
+                detail="<search_address> or <city_id> can't be empty"
             )
-            if not branches:
-                raise exceptions.NotFoundError(item_name="branches_data", api=api)
-            return BaseResultSchem[List[storage_schem.branches_schem.BranchSchema]](data=branches)
-        except Exception as _er:
-            return handle_view_exception(ex=_er, api=api)
+
+
+        branches = await self.branches_obj.get_similar_by_org_city_and_address(
+            organization_id=self.ORGANIZATION_ID,
+            search_address=search_address,
+            city_id=city_id,
+            limit=limit,
+            similarity_threshold=similarity_threshold
+        )
+        if not branches:
+            raise exceptions.NotFoundError(item_name="branches_data", api=api)
+        return BaseResultSchem[List[storage_schem.branches_schem.BranchSchema]](data=branches)
 
     async def get_client_data(
             self,

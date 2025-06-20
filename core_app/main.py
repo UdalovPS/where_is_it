@@ -13,6 +13,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(funcName)
 
 app = FastAPI(title='Where is it APP')
 
-app.include_router(spots_router, prefix="/api")
 app.include_router(client_router, prefix="/api")
+app.include_router(spots_router, prefix="/api")
 

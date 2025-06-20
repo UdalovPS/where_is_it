@@ -52,7 +52,7 @@ class ValidationError(Exception):
     def __init__(self, detail: str, api: str):
         self.detail = detail
         self.error = base_schemas.BaseErrorSchem(
-            name="DownloadKeyError",
+            name="ValidationError",
             details=detail,
             api=api,
             status_code=200
